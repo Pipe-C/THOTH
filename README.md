@@ -185,13 +185,6 @@ vacíos de información o el tema requiere datos vigentes.
 
 ---
 
-## Equipo
-
-Proyecto desarrollado para la Tecnología en Desarrollo de Software de la
-**I.U. Pascual Bravo**.
-
----
-
 ## Licencia
 
 Proyecto académico. Licencia por definir.
