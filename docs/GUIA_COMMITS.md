@@ -56,25 +56,34 @@ Usa el scope para indicar qué parte del monorepo toca el commit:
 - `(screens)` — pantallas (`RegisterScreen`, `LoginScreen`, etc.)
 - `(navigation)` — `AppNavigator` y tipos de navegación
 - `(mock)` — datos de prueba (`mockData.ts`)
+- `(types)` — interfaces de dominio y tipos de rutas (`types/index.ts`, `navigation/types.ts`)
 - `(rag)` — lógica de RAG híbrido / vector search
 - `(gemini)` — integración con Gemini / anti-cliché
 - `(docs)` — documentación general del repo
 
 ---
 
-## 4. Orden de dependencia recomendado (de primero a último)
+## 4. Orden de dependencia: guía por defecto, no ley fija
+
+La lista siguiente es un punto de partida razonable, **pero la regla vinculante real es
+otra**: ningún commit puede importar código que se introduzca en un commit posterior.
+Antes de aplicar esta lista tal cual, audita los imports reales del código — si
+`AppNavigator` importa las pantallas, navegación va *después* de screens, no antes; si
+las pantallas importan `mockData`, mock va *antes* de screens, etc. Cuando el grafo real
+contradiga el orden ilustrativo, gana el grafo real, y el agente debe explicar el desvío.
 
 1. **`chore`** — scaffold del monorepo, `package.json`, `tsconfig.json`, `.gitignore`, configuración base.
 2. **`feat(theme)`** — tokens de identidad visual (`tokens.ts`, `tailwind.config.js`).
-3. **`feat(ui)`** — componentes base que consumen esos tokens.
-4. **`refactor(styles)`** — convención `styles/` (si se hizo después de crear los componentes con estilos inline).
-5. **`feat(navigation)`** — `AppNavigator` y tipos de rutas.
-6. **`feat(screens)`** — las 5 pantallas (puede ser un commit por pantalla si prefieres granularidad máxima, o uno solo si se construyeron como unidad).
-7. **`feat(mock)`** — datos de prueba usados por las pantallas.
-8. **`docs`** — `README.md`, plantillas en `docs/prompt-templates/`.
-
-Nunca committees un paso que depende de código de un paso posterior (ej. no commitees
-pantallas antes que los componentes que importan).
+3. **`refactor(styles)` o `feat(styles)`** — convención `styles/`. Usa `refactor` si estás
+   documentando que el código pasó por una etapa inline antes (historia real del
+   desarrollo, aunque no haya quedado registrada en commits previos); usa `feat` si es la
+   primera vez que ese código entra al historial de git.
+4. **`feat(ui)`** — componentes base que consumen tokens y estilos.
+5. **`feat(types)`** — interfaces de dominio y tipos, cuando otras capas dependan de ellos.
+6. **`feat(mock)`** — datos de prueba (antes de las pantallas que los importan).
+7. **`feat(screens)`** — las pantallas.
+8. **`feat(navigation)`** — el navegador (después de las pantallas que importa).
+9. **`docs`** — `README.md`, `docs/GUIA_COMMITS.md`, plantillas.
 
 ---
 
@@ -96,16 +105,22 @@ Muéstrame git status y git diff --stat antes de commitear.
 
 ---
 
-## 6. Ejemplo de historial esperado
+## 6. Ejemplo de historial esperado (ilustrativo — el orden real depende del grafo de imports)
 
 ```
 chore: scaffold inicial del monorepo (apps/mobile, apps/backend)
 feat(theme): define tokens de identidad visual y tailwind config
+refactor(styles): establece convención src/styles/*.styles.ts
 feat(ui): agrega componentes base Card, Button, Input, Toggle, Badge
-refactor(styles): extrae estilos inline a convención src/styles/*.styles.ts
-feat(navigation): configura AppNavigator con tema visual global
-feat(screens): agrega RegisterScreen, LoginScreen y RoleSelectScreen con mock data
-feat(screens): agrega DirectoryScreen y ChatScreen con mock data
+feat(types): define interfaces de dominio y tipos de rutas
 feat(mock): centraliza datos de prueba en mockData.ts
-docs: agrega README.md del proyecto
+feat(screens): agrega las 5 pantallas del flujo principal con mock data
+feat(navigation): configura AppNavigator y punto de entrada
+docs: agrega README.md, guía de commits y plantillas
 ```
+
+> Este ejemplo ya refleja una corrección real hecha por OpenCode sobre la primera versión
+> de este documento: `mock` va antes de `screens` (las pantallas lo importan) y
+> `navigation` va después de `screens` (el navegador las importa) — al revés de como se
+> había escrito originalmente. Es el caso de ejemplo de por qué el grafo real de imports
+> siempre gana sobre esta lista ilustrativa.
