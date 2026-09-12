@@ -1,0 +1,17 @@
+{
+  "name": "toth-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "TOTH — Asistente de IA generativa académica para la I.U. Pascual Bravo",
+  "workspaces": [
+    "apps/mobile",
+    "apps/backend"
+  ],
+  "scripts": {
+    "mobile": "npm --workspace=apps/mobile start",
+    "backend:dev": "npm --workspace=apps/backend run dev"
+  },
+  "keywords": ["toth", "pascual-bravo", "ai", "gemini", "academic"],
+  "author": "I.U. Pascual Bravo",
+  "license": "UNLICENSED"
+}

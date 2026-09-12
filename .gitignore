@@ -1,0 +1,9 @@
+node_modules/
+.env
+.env.local
+dist/
+.vercel/
+.expo/
+*.log
+AGENTS.md
+COMPORTAMIENTO_DEL_ASISTENTE.md
