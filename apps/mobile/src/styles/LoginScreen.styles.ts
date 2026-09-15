@@ -53,6 +53,10 @@ export const styles = StyleSheet.create({
   submitButton: {
     marginTop: 6,
   },
+  skipButton: {
+    marginTop: 12,
+    alignSelf: 'center',
+  },
   demoFillContainer: {
     marginTop: 18,
     paddingTop: 14,
