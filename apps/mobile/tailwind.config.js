@@ -46,10 +46,6 @@ module.exports = {
         'card': '1rem',      // 16px (rounded-2xl)
         'input': '0.75rem',  // 12px (rounded-xl)
       },
-      boxShadow: {
-        'paper': '0 4px 20px -2px rgba(45, 74, 62, 0.08), 0 2px 6px -1px rgba(45, 74, 62, 0.04)',
-        'subtle': '0 1px 3px 0 rgba(45, 74, 62, 0.06)',
-      },
     },
   },
   plugins: [],
