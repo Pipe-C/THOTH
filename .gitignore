@@ -5,6 +5,7 @@ dist/
 .vercel/
 .expo/
 *.log
+.idea/
 AGENTS.md
 COMPORTAMIENTO_DEL_ASISTENTE.md
 GUIA_INSTALACION_DEMO_LOCAL.md
