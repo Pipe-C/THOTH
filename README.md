@@ -126,9 +126,18 @@ El repositorio es un monorepo administrado con [npm workspaces](https://docs.npm
 git clone https://github.com/Pipe-C/THOTH.git
 cd THOTH
 
-# Instala dependencias y crea automáticamente el enlace (junction) en Windows
+# Instala todas las dependencias del monorepo (npm workspaces las hoistea a la raíz)
 npm install
 ```
+
+### Emulador (AVD — Pixel 7)
+
+Para `npm run android` necesitas un dispositivo virtual ya creado:
+
+1. Android Studio → *More Actions → Device Manager → Create device*.
+2. Elige el modelo **Pixel 7** y la System Image **Android 14 (API 34)** (descárgala la
+   primera vez si la pide).
+3. Pulsa ▶ para arrancar el emulador antes de correr la app.
 
 ### Variables de entorno (backend)
 
@@ -154,6 +163,10 @@ npm run android
 ```
 
 *(También puedes abrir la carpeta `apps/mobile/android` en Android Studio y presionar **Run ▶** con la Terminal 1 corriendo).*
+
+> Si `npm run android` no conecta con Metro, verifica que la Terminal 1 (`npm run mobile`)
+> siga corriendo. Para reiniciar Metro con caché limpia: `npm run mobile -- --reset-cache`
+> (si el puerto 8081 quedó ocupado, cierra el Metro anterior primero).
 
 ---
 
