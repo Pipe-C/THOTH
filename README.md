@@ -110,21 +110,23 @@ THOTH/
 
 ### Requisitos previos
 
-- Node.js 18+
-- npm o yarn
-- Android Studio (para compilar el módulo nativo Kotlin y correr el emulador/dispositivo)
-- Cuenta de Firebase, proyecto de Supabase y API key de Gemini (Google AI Studio)
+- **Node.js 18+**
+- **JDK 17 LTS** (Obligatorio para React Native 0.76; versiones como Java 24/25 son incompatibles con Gradle 8.10)
+- **Android Studio** (con Android SDK, SDK Build-Tools 35.0.0, NDK 26.1 y Emulador configurado)
+- **Variables de entorno:**
+  - `JAVA_HOME`: Ruta a tu JDK 17 (ej. `C:\Program Files\Microsoft\jdk-17.0.20.101-hotspot` o similar)
+  - `ANDROID_HOME`: Ruta a tu Android SDK (ej. `%LOCALAPPDATA%\Android\Sdk`)
+  - En `PATH`: incluir `%JAVA_HOME%\bin`, `%ANDROID_HOME%\platform-tools` y `%ANDROID_HOME%\emulator`
 
 ### Instalación
 
-El repo es un monorepo con [npm workspaces](https://docs.npmjs.com/cli/v9/using-npm/workspaces):
-`apps/mobile` y `apps/backend` se instalan desde la raíz con un solo comando.
+El repositorio es un monorepo administrado con [npm workspaces](https://docs.npmjs.com/cli/v9/using-npm/workspaces). `apps/mobile` y `apps/backend` se instalan desde la raíz con un solo comando:
 
 ```bash
 git clone https://github.com/Pipe-C/THOTH.git
 cd THOTH
 
-# Instala las dependencias de todos los workspaces
+# Instala dependencias y crea automáticamente el enlace (junction) en Windows
 npm install
 ```
 
@@ -139,15 +141,19 @@ SUPABASE_SERVICE_ROLE_KEY=
 TAVILY_API_KEY=
 ```
 
-### Correr el proyecto
+### Correr la aplicación móvil
+
+Para correr la app en emulador o dispositivo físico, utiliza dos terminales:
 
 ```bash
-# App móvil (desde apps/mobile)
-npx react-native run-android
+# Terminal 1 — Inicia el empaquetador Metro (déjalo corriendo)
+npm run mobile
 
-# Backend en local (desde apps/backend)
-vercel dev
+# Terminal 2 — Compila e instala la APK en el emulador de Android
+npm run android
 ```
+
+*(También puedes abrir la carpeta `apps/mobile/android` en Android Studio y presionar **Run ▶** con la Terminal 1 corriendo).*
 
 ---
 
