@@ -14,5 +14,9 @@
   },
   "keywords": ["toth", "pascual-bravo", "ai", "gemini", "academic"],
   "author": "I.U. Pascual Bravo",
-  "license": "UNLICENSED"
+  "license": "UNLICENSED",
+
+  "overrides": {
+    "react-native-safe-area-context": "5.9.1"
+  }
 }
