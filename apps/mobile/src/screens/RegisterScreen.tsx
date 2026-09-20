@@ -139,6 +139,15 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
             >
               Crear Cuenta Académica
             </Button>
+
+            <Button
+              variant="ghost"
+              size="md"
+              onPress={() => navigation.replace('RoleSelect')}
+              style={styles.skipButton}
+            >
+              Omitir registro — ver demo
+            </Button>
           </Card>
 
           {/* Enlace para Iniciar Sesión */}

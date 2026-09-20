@@ -9,6 +9,7 @@
   ],
   "scripts": {
     "mobile": "npm --workspace=apps/mobile start",
+    "android": "npm --workspace=apps/mobile run android",
     "backend:dev": "npm --workspace=apps/backend run dev"
   },
   "keywords": ["toth", "pascual-bravo", "ai", "gemini", "academic"],

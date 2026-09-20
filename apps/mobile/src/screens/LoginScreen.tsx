@@ -110,6 +110,15 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
               Ingresar al Asistente
             </Button>
 
+            <Button
+              variant="ghost"
+              size="md"
+              onPress={() => navigation.replace('RoleSelect')}
+              style={styles.skipButton}
+            >
+              Omitir inicio de sesión — ver demo
+            </Button>
+
             {/* Accesos rápidos para evaluación docente */}
             <View style={styles.demoFillContainer}>
               <MicroCopy style={styles.demoFillLabel}>Acceso rápido para prueba académica:</MicroCopy>
