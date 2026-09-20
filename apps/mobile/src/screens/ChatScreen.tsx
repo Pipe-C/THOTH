@@ -56,7 +56,7 @@ export const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
     setInputText('');
     setIsGenerating(true);
 
-    // Simulación del motor RAG + Gemini 3.8 Flash (Fase 2 mock)
+    // Simulation of RAG + Gemini 3.8 Flash (Phase 2 mock)
     setTimeout(() => {
       let mockAssistantResponse = '';
       if (activeRole === 'docente') {
@@ -91,7 +91,7 @@ export const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.container}
       >
-        {/* Header Superior del Chat */}
+        {/* Superior Chat Header */}
         <View style={styles.header}>
           <View style={styles.headerRow}>
             <TouchableOpacity
@@ -117,7 +117,7 @@ export const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
             />
           </View>
 
-          {/* Configuración Rápida Anti-Cliché */}
+          {/* Anti-Cliche fast configuration */}
           <View style={styles.antiClicheBar}>
             <Toggle
               label="Filtro Anti-Cliché"
@@ -129,7 +129,7 @@ export const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
           </View>
         </View>
 
-        {/* Chips de Plantillas Rápidas */}
+        {/* Fast templates chips */}
         <View style={styles.templateBar}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.templateScroll}>
             {activeRole === 'estudiante' ? (
@@ -178,7 +178,7 @@ export const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
           </ScrollView>
         </View>
 
-        {/* Historial de Mensajes y Entregables */}
+        {/* Messages and deliveries history */}
         <ScrollView
           ref={scrollViewRef}
           style={styles.chatScroll}
@@ -223,7 +223,7 @@ export const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
           )}
         </ScrollView>
 
-        {/* Barra de Entrada de Mensaje */}
+        {/* Message entry bar */}
         <View style={styles.inputBar}>
           <View style={styles.inputContainer}>
             <TextInput
