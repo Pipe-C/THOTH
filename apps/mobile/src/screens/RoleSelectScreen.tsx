@@ -32,7 +32,7 @@ export const RoleSelectScreen: React.FC<Props> = ({ navigation, route }) => {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header Identitario */}
+        {/* Identity Header */}
         <View style={styles.header}>
           <View style={styles.topRow}>
             <Display>TOTH</Display>
@@ -45,7 +45,7 @@ export const RoleSelectScreen: React.FC<Props> = ({ navigation, route }) => {
           </Body>
         </View>
 
-        {/* Card: Perfil Estudiante */}
+        {/* Card: Student Profile  */}
         <TouchableOpacity
           activeOpacity={0.9}
           onPress={() => setSelectedRole('estudiante')}
@@ -71,7 +71,7 @@ export const RoleSelectScreen: React.FC<Props> = ({ navigation, route }) => {
           </Body>
         </TouchableOpacity>
 
-        {/* Card: Perfil Docente */}
+        {/* Card: Teacher Profile  */}
         <TouchableOpacity
           activeOpacity={0.9}
           onPress={() => setSelectedRole('docente')}
@@ -97,7 +97,7 @@ export const RoleSelectScreen: React.FC<Props> = ({ navigation, route }) => {
           </Body>
         </TouchableOpacity>
 
-        {/* Botón de Continuar */}
+        {/* Continue Button */}
         <View style={styles.actions}>
           <Button
             variant="primary"

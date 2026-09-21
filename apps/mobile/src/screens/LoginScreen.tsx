@@ -61,7 +61,7 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          {/* Header Identitario */}
+          {/* Identity Header */}
           <View style={styles.header}>
             <View style={styles.brandRow}>
               <Display>TOTH</Display>
@@ -73,7 +73,7 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
             </Body>
           </View>
 
-          {/* Formulario de Login */}
+          {/* Login Formulary*/}
           <Card style={styles.card}>
             <CardHeader style={styles.cardTitle}>Credenciales Institucionales</CardHeader>
 
@@ -119,7 +119,7 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
               Omitir inicio de sesión — ver demo
             </Button>
 
-            {/* Accesos rápidos para evaluación docente */}
+            {/* Fast Access for Teacher Evaluation */}
             <View style={styles.demoFillContainer}>
               <MicroCopy style={styles.demoFillLabel}>Acceso rápido para prueba académica:</MicroCopy>
               <View style={styles.demoButtonsRow}>
@@ -141,7 +141,7 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
             </View>
           </Card>
 
-          {/* Enlace para Registro y Selección de Rol */}
+          {/* Register Link and Rol Selection */}
           <View style={styles.footer}>
             <View style={styles.footerRow}>
               <MicroCopy>¿No tienes cuenta institucional?</MicroCopy>

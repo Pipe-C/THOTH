@@ -70,7 +70,7 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          {/* Header Identitario */}
+          {/* Identity Header */}
           <View style={styles.header}>
             <View style={styles.brandRow}>
               <Display>TOTH</Display>
@@ -82,7 +82,7 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
             </Body>
           </View>
 
-          {/* Formulario de Registro */}
+          {/* Register Formulary */}
           <Card style={styles.card}>
             <CardHeader style={styles.cardTitle}>Datos del Usuario</CardHeader>
 
@@ -150,7 +150,7 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
             </Button>
           </Card>
 
-          {/* Enlace para Iniciar Sesión */}
+          {/* Login Link */}
           <View style={styles.footer}>
             <MicroCopy>¿Ya tienes una cuenta institucional?</MicroCopy>
             <TouchableOpacity

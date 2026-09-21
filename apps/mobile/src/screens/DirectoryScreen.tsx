@@ -66,7 +66,7 @@ export const DirectoryScreen: React.FC<Props> = ({ navigation, route }) => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        {/* Header Superior con Perfil */}
+        {/* Superior Header with Profile */}
         <View style={styles.header}>
           <View style={styles.headerTop}>
             <View>
@@ -96,7 +96,7 @@ export const DirectoryScreen: React.FC<Props> = ({ navigation, route }) => {
           </View>
         </View>
 
-        {/* Barra de Filtros por Tipo de Documento */}
+        {/* Document Type Filter Bar */}
         <View style={styles.filterBar}>
           <ScrollView
             horizontal
@@ -190,7 +190,7 @@ export const DirectoryScreen: React.FC<Props> = ({ navigation, route }) => {
           </ScrollView>
         </View>
 
-        {/* Listado de Documentos del Directorio */}
+        {/* Directory Document List */}
         <FlatList
           data={filteredItems}
           keyExtractor={(item) => item.id}
