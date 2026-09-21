@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
@@ -85,6 +86,10 @@ export const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
     setInputText(promptSnippet);
   };
 
+  const handleCopyText = (content: string) => {
+    Alert.alert('Copiado', 'El contenido ha sido copiado al portapapeles.');
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView
@@ -132,25 +137,29 @@ export const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
         {/* Fast templates chips */}
         <View style={styles.templateBar}>
           <ScrollView
-           horizontal showsHorizontalScrollIndicator={false}
-           contentContainerStyle={styles.templateScroll}
-           keyboardShouldPersistTaps="handled"
-           >
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.templateScroll}
+            keyboardShouldPersistTaps="handled" // Permite clic inmediato sin cerrar teclado
+          >
             {activeRole === 'estudiante' ? (
               <>
                 <TouchableOpacity
+                  activeOpacity={0.7}
                   onPress={() => applyTemplate('informe_laboratorio', 'Redacta un informe de laboratorio sobre: [tema] siguiendo el syllabus institucional')}
                   style={styles.templateChip}
                 >
                   <Text style={styles.templateChipText}>+ Informe de Laboratorio</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
+                  activeOpacity={0.7}
                   onPress={() => applyTemplate('ensayo', 'Escribe un ensayo académico sobre: [tema] fundamentado en el material institucional')}
                   style={styles.templateChip}
                 >
                   <Text style={styles.templateChipText}>+ Ensayo Académico</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
+                  activeOpacity={0.7}
                   onPress={() => applyTemplate('consulta_libre', '¿Qué requisitos exige el reglamento estudiantil sobre: [consulta]?')}
                   style={styles.templateChip}
                 >
@@ -160,18 +169,21 @@ export const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
             ) : (
               <>
                 <TouchableOpacity
+                  activeOpacity={0.7}
                   onPress={() => applyTemplate('guia_clase', 'Genera una guía de clase sobre: [tema] para el curso de [asignatura]')}
                   style={styles.templateChip}
                 >
                   <Text style={styles.templateChipText}>+ Guía de Clase</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
+                  activeOpacity={0.7}
                   onPress={() => applyTemplate('articulo_investigacion', 'Redacta un artículo académico sobre: [tema] para revisión por pares')}
                   style={styles.templateChip}
                 >
                   <Text style={styles.templateChipText}>+ Artículo Académico</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
+                  activeOpacity={0.7}
                   onPress={() => applyTemplate('guia_clase', 'Estructura una rúbrica analítica de evaluación para la entrega de [proyecto]')}
                   style={styles.templateChip}
                 >
@@ -188,6 +200,7 @@ export const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
           style={styles.chatScroll}
           contentContainerStyle={styles.chatContent}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled" // Permite clics inmediatos dentro de la lista
         >
           {messages.map((msg) => {
             if (msg.sender === 'user') {
@@ -259,4 +272,3 @@ export const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
     </SafeAreaView>
   );
 };
-
