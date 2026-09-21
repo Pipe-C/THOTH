@@ -131,7 +131,11 @@ export const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
 
         {/* Fast templates chips */}
         <View style={styles.templateBar}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.templateScroll}>
+          <ScrollView
+           horizontal showsHorizontalScrollIndicator={false}
+           contentContainerStyle={styles.templateScroll}
+           keyboardShouldPersistTaps="handled"
+           >
             {activeRole === 'estudiante' ? (
               <>
                 <TouchableOpacity
