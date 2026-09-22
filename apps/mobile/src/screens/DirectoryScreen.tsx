@@ -70,7 +70,7 @@ export const DirectoryScreen: React.FC<Props> = ({ navigation, route }) => {
         <View style={styles.header}>
           <View style={styles.headerTop}>
             <View>
-              <Text style={styles.appTitle}>TOTH</Text>
+              <Display style={styles.appTitle}>TOTH</Display>
               <MicroCopy style={styles.userEmail}>{MOCK_CURRENT_USER.email}</MicroCopy>
             </View>
             <TouchableOpacity
@@ -78,9 +78,9 @@ export const DirectoryScreen: React.FC<Props> = ({ navigation, route }) => {
               onPress={() => navigation.navigate('RoleSelect', { currentRole: activeRole })}
               style={styles.profileBadge}
             >
-              <Text style={styles.profileBadgeText}>
+              <Body style={styles.profileBadgeText}>
                 Rol: {activeRole === 'estudiante' ? 'Estudiante' : 'Docente'} ▾
-              </Text>
+              </Body>
             </TouchableOpacity>
           </View>
 

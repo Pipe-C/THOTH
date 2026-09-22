@@ -108,9 +108,9 @@ export const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
             </TouchableOpacity>
 
             <View style={styles.headerTitleContainer}>
-              <Text style={styles.headerTitle} numberOfLines={1}>
+              <Display style={styles.headerTitle} numberOfLines={1}>
                 {docTitle}
-              </Text>
+              </Display>
               <MicroCopy style={styles.headerSub}>
                 Modo: {activeRole === 'estudiante' ? 'Estudiante' : 'Docente'} • Gemini 3.8 Flash
               </MicroCopy>
@@ -200,15 +200,15 @@ export const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
           style={styles.chatScroll}
           contentContainerStyle={styles.chatContent}
           showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled" // Permite clics inmediatos dentro de la lista
+          keyboardShouldPersistTaps="handled"
         >
           {messages.map((msg) => {
             if (msg.sender === 'user') {
               return (
                 <View key={msg.id} style={styles.userBubbleContainer}>
                   <View style={styles.userBubble}>
-                    <Text style={styles.userBubbleText}>{msg.content}</Text>
-                    <Text style={styles.timestampUser}>{msg.timestamp}</Text>
+                    <Body style={styles.userBubbleText}>{msg.content}</Body>
+                    <MicroCopy style={styles.timestampUser}>{msg.timestamp}</MicroCopy>
                   </View>
                 </View>
               );
@@ -233,9 +233,9 @@ export const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
           {isGenerating && (
             <View style={styles.generatingContainer}>
               <ActivityIndicator size="small" color={colors.accent} />
-              <Text style={styles.generatingText}>
+              <Body style={styles.generatingText}>
                 Consultando RAG institucional y aplicando filtro anti-cliché...
-              </Text>
+              </Body>
             </View>
           )}
         </ScrollView>
