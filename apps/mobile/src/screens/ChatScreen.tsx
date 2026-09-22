@@ -9,10 +9,9 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { MainStackParamList } from '../types/navigation';
+import { RootStackParamList } from '../navigation/types';
 import { Display, Subtitle, CardHeader, Body, MicroCopy } from '../components/Typography';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
@@ -24,7 +23,7 @@ import { ChatMessage, MOCK_INITIAL_MESSAGES } from '../services/mockData';
 import { DocumentType, UserProfileRole } from '../types';
 import { styles } from '../styles/ChatScreen.styles';
 
-type Props = NativeStackScreenProps<MainStackParamList, 'Chat'>;
+type Props = NativeStackScreenProps<RootStackParamList, 'Chat'>;
 
 export const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
   const activeRole: UserProfileRole = route.params?.activeRole || 'estudiante';
@@ -57,7 +56,7 @@ export const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
     setInputText('');
     setIsGenerating(true);
 
-    // Simulation of RAG + Gemini 3.8 Flash (Phase 2 mock)
+    // Simulación del motor RAG + Gemini 3.8 Flash (Fase 2 mock)
     setTimeout(() => {
       let mockAssistantResponse = '';
       if (activeRole === 'docente') {
@@ -86,17 +85,13 @@ export const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
     setInputText(promptSnippet);
   };
 
-  const handleCopyText = (content: string) => {
-    Alert.alert('Copiado', 'El contenido ha sido copiado al portapapeles.');
-  };
-
   return (
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.container}
       >
-        {/* Superior Chat Header */}
+        {/* Header Superior del Chat */}
         <View style={styles.header}>
           <View style={styles.headerRow}>
             <TouchableOpacity
@@ -108,9 +103,9 @@ export const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
             </TouchableOpacity>
 
             <View style={styles.headerTitleContainer}>
-              <Display style={styles.headerTitle} numberOfLines={1}>
+              <Text style={styles.headerTitle} numberOfLines={1}>
                 {docTitle}
-              </Display>
+              </Text>
               <MicroCopy style={styles.headerSub}>
                 Modo: {activeRole === 'estudiante' ? 'Estudiante' : 'Docente'} • Gemini 3.8 Flash
               </MicroCopy>
@@ -122,7 +117,7 @@ export const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
             />
           </View>
 
-          {/* Anti-Cliche fast configuration */}
+          {/* Configuración Rápida Anti-Cliché */}
           <View style={styles.antiClicheBar}>
             <Toggle
               label="Filtro Anti-Cliché"
@@ -134,32 +129,24 @@ export const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
           </View>
         </View>
 
-        {/* Fast templates chips */}
+        {/* Chips de Plantillas Rápidas */}
         <View style={styles.templateBar}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.templateScroll}
-            keyboardShouldPersistTaps="handled" // Permite clic inmediato sin cerrar teclado
-          >
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.templateScroll}>
             {activeRole === 'estudiante' ? (
               <>
                 <TouchableOpacity
-                  activeOpacity={0.7}
                   onPress={() => applyTemplate('informe_laboratorio', 'Redacta un informe de laboratorio sobre: [tema] siguiendo el syllabus institucional')}
                   style={styles.templateChip}
                 >
                   <Text style={styles.templateChipText}>+ Informe de Laboratorio</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  activeOpacity={0.7}
                   onPress={() => applyTemplate('ensayo', 'Escribe un ensayo académico sobre: [tema] fundamentado en el material institucional')}
                   style={styles.templateChip}
                 >
                   <Text style={styles.templateChipText}>+ Ensayo Académico</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  activeOpacity={0.7}
                   onPress={() => applyTemplate('consulta_libre', '¿Qué requisitos exige el reglamento estudiantil sobre: [consulta]?')}
                   style={styles.templateChip}
                 >
@@ -169,21 +156,18 @@ export const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
             ) : (
               <>
                 <TouchableOpacity
-                  activeOpacity={0.7}
                   onPress={() => applyTemplate('guia_clase', 'Genera una guía de clase sobre: [tema] para el curso de [asignatura]')}
                   style={styles.templateChip}
                 >
                   <Text style={styles.templateChipText}>+ Guía de Clase</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  activeOpacity={0.7}
                   onPress={() => applyTemplate('articulo_investigacion', 'Redacta un artículo académico sobre: [tema] para revisión por pares')}
                   style={styles.templateChip}
                 >
                   <Text style={styles.templateChipText}>+ Artículo Académico</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  activeOpacity={0.7}
                   onPress={() => applyTemplate('guia_clase', 'Estructura una rúbrica analítica de evaluación para la entrega de [proyecto]')}
                   style={styles.templateChip}
                 >
@@ -194,21 +178,20 @@ export const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
           </ScrollView>
         </View>
 
-        {/* Messages and deliveries history */}
+        {/* Historial de Mensajes y Entregables */}
         <ScrollView
           ref={scrollViewRef}
           style={styles.chatScroll}
           contentContainerStyle={styles.chatContent}
           showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
         >
           {messages.map((msg) => {
             if (msg.sender === 'user') {
               return (
                 <View key={msg.id} style={styles.userBubbleContainer}>
                   <View style={styles.userBubble}>
-                    <Body style={styles.userBubbleText}>{msg.content}</Body>
-                    <MicroCopy style={styles.timestampUser}>{msg.timestamp}</MicroCopy>
+                    <Text style={styles.userBubbleText}>{msg.content}</Text>
+                    <Text style={styles.timestampUser}>{msg.timestamp}</Text>
                   </View>
                 </View>
               );
@@ -233,14 +216,14 @@ export const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
           {isGenerating && (
             <View style={styles.generatingContainer}>
               <ActivityIndicator size="small" color={colors.accent} />
-              <Body style={styles.generatingText}>
+              <Text style={styles.generatingText}>
                 Consultando RAG institucional y aplicando filtro anti-cliché...
-              </Body>
+              </Text>
             </View>
           )}
         </ScrollView>
 
-        {/* Message entry bar */}
+        {/* Barra de Entrada de Mensaje */}
         <View style={styles.inputBar}>
           <View style={styles.inputContainer}>
             <TextInput
@@ -272,3 +255,4 @@ export const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
     </SafeAreaView>
   );
 };
+
