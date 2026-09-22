@@ -1,17 +1,9 @@
-import React from 'react';
-import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { RootStackParamList } from './types';
-import {
-  LoginScreen,
-  RegisterScreen,
-  RoleSelectScreen,
-  DirectoryScreen,
-  ChatScreen,
-} from '../screens';
+import React from "react";
+import { NavigationContainer, DefaultTheme } from "@react-navigation/native";
+import { AuthNavigator } from "./AuthNavigator";
+import { MainNavigator } from "./MainNavigator";
+import { useAuth } from "../context/AuthContext";
 import { colors } from '../theme/tokens';
-
-const Stack = createNativeStackNavigator<RootStackParamList>();
 
 const TothNavigationTheme = {
   ...DefaultTheme,
@@ -25,25 +17,16 @@ const TothNavigationTheme = {
   },
 };
 
-export const AppNavigator: React.FC = () => {
+export function AppNavigator(){
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return null;
+  }
+
   return (
-    <NavigationContainer theme={TothNavigationTheme}>
-      <Stack.Navigator
-        initialRouteName="Login"
-        screenOptions={{
-          headerShown: false,
-          contentStyle: {
-            backgroundColor: colors.background,
-          },
-          animation: 'fade_from_bottom',
-        }}
-      >
-        <Stack.Screen name="Login" component={LoginScreen} />
-        <Stack.Screen name="Register" component={RegisterScreen} />
-        <Stack.Screen name="RoleSelect" component={RoleSelectScreen} />
-        <Stack.Screen name="Directory" component={DirectoryScreen} />
-        <Stack.Screen name="Chat" component={ChatScreen} />
-      </Stack.Navigator>
+    <NavigationContainer  theme={TothNavigationTheme}>
+      {user ? <MainNavigator /> : <AuthNavigator />}
     </NavigationContainer>
   );
-};
+}

@@ -10,7 +10,14 @@ export interface User {
   displayName: string;
   photoURL?: string;
   activeProfile: UserProfileRole;
-}
+};
+
+export type AuthContextType = {
+  user: User | null;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => void;
+  loading: boolean;
+};
 
 export type DocumentType = 
   | 'ensayo' 
@@ -62,3 +69,5 @@ export interface DocumentHistoryItem {
   sourcesUsed: SourceType[];
   createdAt: number;
 }
+
+export * from './navigation';

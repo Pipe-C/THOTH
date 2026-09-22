@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../navigation/types';
+import { MainStackParamList } from '../types/navigation';
 import { Display, Subtitle, CardHeader, Body, MicroCopy } from '../components/Typography';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
@@ -15,7 +15,7 @@ import { Badge } from '../components/Badge';
 import { UserProfileRole } from '../types';
 import { styles } from '../styles/RoleSelectScreen.styles';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'RoleSelect'>;
+type Props = NativeStackScreenProps<MainStackParamList, 'RoleSelect'>;
 
 export const RoleSelectScreen: React.FC<Props> = ({ navigation, route }) => {
   const [selectedRole, setSelectedRole] = useState<UserProfileRole>(
