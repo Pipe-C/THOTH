@@ -25,7 +25,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       setUser({
           uid: userData.uid,
-          email: userData.email,
+          email: email,
           displayName: userData.displayName,
           photoURL: userData.photoURL,
           activeProfile: userData.activeProfile,

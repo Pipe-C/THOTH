@@ -37,7 +37,7 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
     }
 
     setIsLoading(true);
-    // Simulación mock de autenticación
+    // Mock autentication simulation
     setTimeout(() => {
       try {
           login(email, password);
@@ -110,7 +110,7 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
               variant="primary"
               size="lg"
               isLoading={isLoading}
-              onPress={handleLogin}
+              onPress={handleLogin} // Skip with actual credentials
               style={styles.submitButton}
             >
               Ingresar al Asistente
@@ -119,7 +119,7 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
             <Button
               variant="ghost"
               size="md"
-              onPress={() => navigation.replace('RoleSelect')}
+              onPress={handleLogin}
               style={styles.skipButton}
             >
               Omitir inicio de sesión — ver demo
@@ -162,7 +162,7 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
 
             <TouchableOpacity
               activeOpacity={0.7}
-              onPress={() => navigation.navigate('RoleSelect')}
+              onPress={handleLogin} // Skip with actual credentials
               style={styles.roleConfigLink}
             >
               <Text style={styles.roleConfigLinkText}>Configurar Perfil Académico (Estudiante / Docente)</Text>
