@@ -88,11 +88,7 @@ export const PaperResultViewer: React.FC<PaperResultViewerProps> = ({
         </View>
 
         {/* Paper Content with Academic Reading Typography */}
-        <View
-          style={styles.contentScroll}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={true}
-        >
+        <View　style={styles.contentScroll}>
           <Text style={styles.bodyText} className="font-lexend-regular text-sm text-textPrimary leading-relaxed">
             {content}
           </Text>
