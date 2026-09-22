@@ -88,15 +88,11 @@ export const PaperResultViewer: React.FC<PaperResultViewerProps> = ({
         </View>
 
         {/* Paper Content with Academic Reading Typography */}
-        <ScrollView
-          style={styles.contentScroll}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={true}
-        >
+        <View　style={styles.contentScroll}>
           <Text style={styles.bodyText} className="font-lexend-regular text-sm text-textPrimary leading-relaxed">
             {content}
           </Text>
-        </ScrollView>
+        </View>
 
         {/* Paper Actions Toolbar */}
         <View style={styles.actionsBar} className="flex-row items-center justify-between pt-4 mt-4 border-t border-primary/10">

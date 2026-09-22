@@ -9,22 +9,25 @@ import {
   Platform,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../navigation/types';
+import { AuthStackParamList } from '../types/navigation';
 import { Display, Subtitle, CardHeader, Body, MicroCopy } from '../components/Typography';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { Badge } from '../components/Badge';
+import { useAuth } from "../context/AuthContext";
 import { MOCK_CURRENT_USER } from '../services/mockData';
 import { styles } from '../styles/LoginScreen.styles';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
+type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 
 export const LoginScreen: React.FC<Props> = ({ navigation }) => {
   const [email, setEmail] = useState('estudiante.demo@pascualbravo.edu.co');
   const [password, setPassword] = useState('pascual123');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  const { login } = useAuth();
 
   const handleLogin = () => {
     setError(null);
@@ -34,10 +37,12 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
     }
 
     setIsLoading(true);
-    // Simulación mock de autenticación
+    // Mock autentication simulation
     setTimeout(() => {
+      try {
+          login(email, password);
+      } catch {}
       setIsLoading(false);
-      navigation.replace('Directory', { activeRole: 'estudiante' });
     }, 600);
   };
 
@@ -60,8 +65,9 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
-          {/* Header Identitario */}
+          {/* Identity Header */}
           <View style={styles.header}>
             <View style={styles.brandRow}>
               <Display>TOTH</Display>
@@ -73,7 +79,7 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
             </Body>
           </View>
 
-          {/* Formulario de Login */}
+          {/* Login Formulary*/}
           <Card style={styles.card}>
             <CardHeader style={styles.cardTitle}>Credenciales Institucionales</CardHeader>
 
@@ -104,7 +110,7 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
               variant="primary"
               size="lg"
               isLoading={isLoading}
-              onPress={handleLogin}
+              onPress={handleLogin} // Skip with actual credentials
               style={styles.submitButton}
             >
               Ingresar al Asistente
@@ -113,13 +119,13 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
             <Button
               variant="ghost"
               size="md"
-              onPress={() => navigation.replace('RoleSelect')}
+              onPress={handleLogin}
               style={styles.skipButton}
             >
               Omitir inicio de sesión — ver demo
             </Button>
 
-            {/* Accesos rápidos para evaluación docente */}
+            {/* Fast Access for Teacher Evaluation */}
             <View style={styles.demoFillContainer}>
               <MicroCopy style={styles.demoFillLabel}>Acceso rápido para prueba académica:</MicroCopy>
               <View style={styles.demoButtonsRow}>
@@ -141,7 +147,7 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
             </View>
           </Card>
 
-          {/* Enlace para Registro y Selección de Rol */}
+          {/* Register Link and Rol Selection */}
           <View style={styles.footer}>
             <View style={styles.footerRow}>
               <MicroCopy>¿No tienes cuenta institucional?</MicroCopy>
@@ -156,7 +162,7 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
 
             <TouchableOpacity
               activeOpacity={0.7}
-              onPress={() => navigation.navigate('RoleSelect')}
+              onPress={handleLogin} // Skip with actual credentials
               style={styles.roleConfigLink}
             >
               <Text style={styles.roleConfigLinkText}>Configurar Perfil Académico (Estudiante / Docente)</Text>
