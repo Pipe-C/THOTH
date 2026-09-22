@@ -8,7 +8,7 @@ import {
   FlatList,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../navigation/types';
+import { MainStackParamList } from '../types/navigation';
 import { Display, Subtitle, CardHeader, Body, MicroCopy } from '../components/Typography';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
@@ -17,7 +17,7 @@ import { MOCK_DIRECTORY_ITEMS, MOCK_CURRENT_USER } from '../services/mockData';
 import { DocumentHistoryItem, DocumentType, UserProfileRole } from '../types';
 import { styles } from '../styles/DirectoryScreen.styles';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'Directory'>;
+type Props = NativeStackScreenProps<MainStackParamList, 'Directory'>;
 
 export const DirectoryScreen: React.FC<Props> = ({ navigation, route }) => {
   const [activeRole, setActiveRole] = useState<UserProfileRole>(

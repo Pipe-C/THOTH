@@ -12,7 +12,7 @@ import {
   Alert,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../navigation/types';
+import { MainStackParamList } from '../types/navigation';
 import { Display, Subtitle, CardHeader, Body, MicroCopy } from '../components/Typography';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
@@ -24,7 +24,7 @@ import { ChatMessage, MOCK_INITIAL_MESSAGES } from '../services/mockData';
 import { DocumentType, UserProfileRole } from '../types';
 import { styles } from '../styles/ChatScreen.styles';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'Chat'>;
+type Props = NativeStackScreenProps<MainStackParamList, 'Chat'>;
 
 export const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
   const activeRole: UserProfileRole = route.params?.activeRole || 'estudiante';

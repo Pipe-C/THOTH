@@ -9,22 +9,25 @@ import {
   Platform,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../navigation/types';
+import { AuthStackParamList } from '../types/navigation';
 import { Display, Subtitle, CardHeader, Body, MicroCopy } from '../components/Typography';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { Badge } from '../components/Badge';
+import { useAuth } from "../context/AuthContext";
 import { MOCK_CURRENT_USER } from '../services/mockData';
 import { styles } from '../styles/LoginScreen.styles';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
+type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 
 export const LoginScreen: React.FC<Props> = ({ navigation }) => {
   const [email, setEmail] = useState('estudiante.demo@pascualbravo.edu.co');
   const [password, setPassword] = useState('pascual123');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  const { login } = useAuth();
 
   const handleLogin = () => {
     setError(null);
@@ -36,8 +39,10 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
     setIsLoading(true);
     // Simulación mock de autenticación
     setTimeout(() => {
+      try {
+          login(email, password);
+      } catch {}
       setIsLoading(false);
-      navigation.replace('Directory', { activeRole: 'estudiante' });
     }, 600);
   };
 
