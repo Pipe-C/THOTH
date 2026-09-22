@@ -6,7 +6,7 @@ export type UserProfileRole = 'estudiante' | 'docente';
 
 export interface User {
   uid: string;
-  email: string; // Restringido a @pascualbravo.edu.co
+  email: string; // Restricted to @pascualbravo.edu.co
   displayName: string;
   photoURL?: string;
   activeProfile: UserProfileRole;

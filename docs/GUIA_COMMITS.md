@@ -1,15 +1,5 @@
 # GUIA_COMMITS.md — TOTH
 
-> Detalle extendido de la **Política de Commits** declarada como regla permanente en
-> `AGENTS.md`, sección 9. Esta política no es un prompt que se repite cada vez — aplica
-> automáticamente a todo cambio del repositorio, siguiendo
-> [Conventional Commits v1.0.0](https://www.conventionalcommits.org/es/v1.0.0/) y
-> respetando el orden de dependencia entre capas del proyecto. Este documento existe para
-> el detalle (tablas, ejemplos) que sería demasiado extenso para vivir dentro del spec
-> principal.
-
----
-
 ## 1. Por qué "por etapas" y no "todo en un commit"
 
 Un solo commit gigante ("scaffold completo de TOTH") es difícil de revisar, difícil de
