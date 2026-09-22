@@ -5,8 +5,6 @@ import {
   Text,
   TextInputProps,
   ViewStyle,
-  NativeSyntheticEvent,
-  TextInputFocusEventData,
 } from 'react-native';
 import { colors } from '../theme/tokens';
 import { styles } from '../styles/Input.styles';
@@ -36,12 +34,12 @@ export const Input: React.FC<InputProps> = ({
 }) => {
   const [isFocused, setIsFocused] = useState(false);
 
-  const handleFocus = (e: NativeSyntheticEvent<TextInputFocusEventData>) => {
+  const handleFocus = (e: any) => {
     setIsFocused(true);
     onFocus?.(e);
   };
 
-  const handleBlur = (e: NativeSyntheticEvent<TextInputFocusEventData>) => {
+  const handleBlur = (e: any) => {
     setIsFocused(false);
     onBlur?.(e);
   };
@@ -58,17 +56,17 @@ export const Input: React.FC<InputProps> = ({
       <View
         style={[
           styles.inputContainer,
+          isFocused && styles.inputFocused,
+          isError && styles.inputError,
         ]}
-        className={`flex-row items-center bg-white rounded-xl border border-primary/10 px-4 py-3 `}
+        className={`flex-row items-center bg-white rounded-xl border border-primary/10 px-4 py-3 ${
+          isFocused ? 'border-primary' : ''
+        } ${isError ? 'border-red-500' : ''}`}
       >
         {leftIcon ? <View style={styles.iconContainer}>{leftIcon}</View> : null}
         <TextInput
           placeholderTextColor={colors.textSecondary}
-          style={[
-              styles.input,
-              isFocused && styles.inputFocused,
-              isError && styles.inputError,
-              style]}
+          style={[styles.input, style]}
           className="flex-1 font-lexend-regular text-sm text-textPrimary py-0"
           onFocus={handleFocus}
           onBlur={handleBlur}
@@ -88,3 +86,4 @@ export const Input: React.FC<InputProps> = ({
     </View>
   );
 };
+

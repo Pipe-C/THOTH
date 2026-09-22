@@ -17,28 +17,28 @@ export const styles = StyleSheet.create({
     fontSize: 11,
     fontFamily: typography.fontFamily.medium,
   },
-  // Institutional: Soft Mint Green (#E8EFEA) with Deep Moss Green text (#2D4A3E)
+  // Institutional: Verde Menta Suave (#E8EFEA) con texto Verde Musgo Profundo (#2D4A3E)
   institutionalContainer: {
     backgroundColor: colors.validation,
   },
   institutionalText: {
     color: colors.primary,
   },
-  // Web: Inactive grey with Ash grey
+  // Web: Gris Inactivo con texto Gris Ceniza
   webContainer: {
     backgroundColor: colors.toggleOff,
   },
   webText: {
     color: colors.textSecondary,
   },
-  // Accent: Soft Terracotta with white text
+  // Accent: Terracota Suave con texto blanco
   accentContainer: {
     backgroundColor: colors.accent,
   },
   accentText: {
     color: colors.surface,
   },
-  // Outline: thin Border with Deep Moss text
+  // Outline: Borde fino con texto Verde Musgo
   outlineContainer: {
     backgroundColor: 'transparent',
     borderWidth: 1,

@@ -9,7 +9,7 @@ import {
   Platform,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { AuthStackParamList } from '../types/navigation';
+import { RootStackParamList } from '../navigation/types';
 import { Display, Subtitle, CardHeader, Body, MicroCopy } from '../components/Typography';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
@@ -17,7 +17,7 @@ import { Input } from '../components/Input';
 import { Badge } from '../components/Badge';
 import { styles } from '../styles/RegisterScreen.styles';
 
-type Props = NativeStackScreenProps<AuthStackParamList, 'Register'>;
+type Props = NativeStackScreenProps<RootStackParamList, 'Register'>;
 
 export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
   const [fullName, setFullName] = useState('');
@@ -69,9 +69,8 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
         >
-          {/* Identity Header */}
+          {/* Header Identitario */}
           <View style={styles.header}>
             <View style={styles.brandRow}>
               <Display>TOTH</Display>
@@ -83,7 +82,7 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
             </Body>
           </View>
 
-          {/* Register Formulary */}
+          {/* Formulario de Registro */}
           <Card style={styles.card}>
             <CardHeader style={styles.cardTitle}>Datos del Usuario</CardHeader>
 
@@ -151,7 +150,7 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
             </Button>
           </Card>
 
-          {/* Login Link */}
+          {/* Enlace para Iniciar Sesión */}
           <View style={styles.footer}>
             <MicroCopy>¿Ya tienes una cuenta institucional?</MicroCopy>
             <TouchableOpacity

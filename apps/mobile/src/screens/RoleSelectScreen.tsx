@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { MainStackParamList } from '../types/navigation';
+import { RootStackParamList } from '../navigation/types';
 import { Display, Subtitle, CardHeader, Body, MicroCopy } from '../components/Typography';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
@@ -15,7 +15,7 @@ import { Badge } from '../components/Badge';
 import { UserProfileRole } from '../types';
 import { styles } from '../styles/RoleSelectScreen.styles';
 
-type Props = NativeStackScreenProps<MainStackParamList, 'RoleSelect'>;
+type Props = NativeStackScreenProps<RootStackParamList, 'RoleSelect'>;
 
 export const RoleSelectScreen: React.FC<Props> = ({ navigation, route }) => {
   const [selectedRole, setSelectedRole] = useState<UserProfileRole>(
@@ -32,7 +32,7 @@ export const RoleSelectScreen: React.FC<Props> = ({ navigation, route }) => {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Identity Header */}
+        {/* Header Identitario */}
         <View style={styles.header}>
           <View style={styles.topRow}>
             <Display>TOTH</Display>
@@ -45,7 +45,7 @@ export const RoleSelectScreen: React.FC<Props> = ({ navigation, route }) => {
           </Body>
         </View>
 
-        {/* Card: Student Profile  */}
+        {/* Card: Perfil Estudiante */}
         <TouchableOpacity
           activeOpacity={0.9}
           onPress={() => setSelectedRole('estudiante')}
@@ -71,7 +71,7 @@ export const RoleSelectScreen: React.FC<Props> = ({ navigation, route }) => {
           </Body>
         </TouchableOpacity>
 
-        {/* Card: Teacher Profile  */}
+        {/* Card: Perfil Docente */}
         <TouchableOpacity
           activeOpacity={0.9}
           onPress={() => setSelectedRole('docente')}
@@ -97,7 +97,7 @@ export const RoleSelectScreen: React.FC<Props> = ({ navigation, route }) => {
           </Body>
         </TouchableOpacity>
 
-        {/* Continue Button */}
+        {/* Botón de Continuar */}
         <View style={styles.actions}>
           <Button
             variant="primary"
