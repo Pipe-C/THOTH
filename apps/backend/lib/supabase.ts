@@ -18,7 +18,7 @@ const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
  * Umbral mínimo de similitud coseno (0–1) para considerar un chunk
  * como relevante. Por debajo de este valor se activa el fallback web.
  */
-export const SIMILARITY_THRESHOLD = parseFloat(
+export const SIMILARITY_THRESHOLD = Number.parseFloat(
   process.env.SIMILARITY_THRESHOLD ?? '0.75',
 );
 
