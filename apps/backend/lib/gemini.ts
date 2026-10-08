@@ -72,7 +72,7 @@ PERFIL ACTIVO: DOCENTE
 
 // ─── Plantillas de prompt por tipo de documento ──────────────
 
-function buildDocumentPrompt(
+export function buildDocumentPrompt(
   type: DocumentType,
   userPrompt: string,
   wordCount?: number,
