@@ -38,10 +38,10 @@ function isValidPassword(password: string): boolean {
 
 // ─── Handler ──────────────────────────────────────────────────
 
-export default async function handler(
+export default function handler(
   req: VercelRequest,
   res: VercelResponse,
-): Promise<void> {
+): void {
   if (!requireMethod(req, res, 'POST')) return;
 
   const body = req.body as Partial<RegisterRequest>;

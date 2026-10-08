@@ -23,10 +23,10 @@ const ALLOWED_DOMAIN = 'pascualbravo.edu.co';
 
 // ─── Handler ──────────────────────────────────────────────────
 
-export default async function handler(
+export default function handler(
   req: VercelRequest,
   res: VercelResponse,
-): Promise<void> {
+): void {
   if (!requireMethod(req, res, 'POST')) return;
 
   const body = req.body as Partial<LoginRequest>;
