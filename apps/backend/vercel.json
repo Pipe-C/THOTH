@@ -3,8 +3,29 @@
   "framework": null,
   "routes": [
     {
-      "src": "/api/(.*)",
-      "dest": "/api/$1"
+      "src": "/api/v1/health",
+      "dest": "/api/v1/health.ts",
+      "methods": ["GET"]
+    },
+    {
+      "src": "/api/v1/auth/register",
+      "dest": "/api/v1/auth/register.ts",
+      "methods": ["POST"]
+    },
+    {
+      "src": "/api/v1/auth/login",
+      "dest": "/api/v1/auth/login.ts",
+      "methods": ["POST"]
+    },
+    {
+      "src": "/api/v1/vector-search",
+      "dest": "/api/v1/vector-search.ts",
+      "methods": ["POST"]
+    },
+    {
+      "src": "/api/v1/generate",
+      "dest": "/api/v1/generate.ts",
+      "methods": ["POST"]
     }
   ]
 }
