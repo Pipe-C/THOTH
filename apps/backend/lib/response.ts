@@ -5,6 +5,7 @@
 // una forma consistente de respuesta en toda la API.
 // ─────────────────────────────────────────────────────────────
 
+import { randomUUID } from 'node:crypto';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 // ─── Códigos de error internos ────────────────────────────────
@@ -65,7 +66,7 @@ export interface ApiError {
 // ─── Generador de ID de solicitud ────────────────────────────
 
 function generateRequestId(): string {
-  return `toth-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  return `toth-${Date.now()}-${randomUUID().slice(0, 8)}`;
 }
 
 // ─── Helper: respuesta exitosa ────────────────────────────────
