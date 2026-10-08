@@ -54,9 +54,11 @@ export function analyzeText(text: string): FilterResult {
   const detected: string[] = [];
 
   for (const pattern of CLICHE_PATTERNS) {
-    const matches = text.match(pattern);
-    if (matches) {
-      detected.push(...matches.map((m) => m.toLowerCase()));
+    pattern.lastIndex = 0;
+    let match: RegExpExecArray | null = pattern.exec(text);
+    while (match !== null) {
+      detected.push(match[0].toLowerCase());
+      match = pattern.exec(text);
     }
   }
 
@@ -81,7 +83,9 @@ export function buildRegenerationPrompt(
   originalText: string,
   detected: string[],
 ): string {
-  return `El siguiente texto contiene muletillas o frases de relleno de IA que deben eliminarse. Reescríbelo manteniendo exactamente el mismo contenido académico, pero sin usar estas expresiones detectadas: ${detected.map((d) => `"${d}"`).join(', ')}.
+  const formattedDetected = detected.map((d) => `"${d}"`).join(', ');
+
+  return `El siguiente texto contiene muletillas o frases de relleno de IA que deben eliminarse. Reescríbelo manteniendo exactamente el mismo contenido académico, pero sin usar estas expresiones detectadas: ${formattedDetected}.
 
 Texto a reescribir:
 ${originalText}
