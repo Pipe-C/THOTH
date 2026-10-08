@@ -8,24 +8,7 @@ vi.mock('../lib/supabase.js', () => ({
 
 import vectorSearchHandler from '../api/v1/vector-search.js';
 import { searchDocuments } from '../lib/supabase.js';
-
-function createMockHttp(method: string, body: Record<string, unknown> = {}) {
-  const req = { method, body } as unknown as VercelRequest;
-  const state = { statusCode: 200, body: null as any };
-  const res = {
-    status: vi.fn((code: number) => {
-      state.statusCode = code;
-      return res;
-    }),
-    setHeader: vi.fn(),
-    json: vi.fn((data: unknown) => {
-      state.body = data;
-      return res;
-    }),
-  } as unknown as VercelResponse;
-
-  return { req, res, state };
-}
+import { createMockHttp } from './helpers/mockHttp.js';
 
 describe('Vector Search Endpoint (POST /api/v1/vector-search)', () => {
   beforeEach(() => {
@@ -62,7 +45,10 @@ describe('Vector Search Endpoint (POST /api/v1/vector-search)', () => {
         id: 'chunk_1',
         content: 'Requisitos de grado: completar 160 créditos y trabajo de grado.',
         similarity: 0.89,
-        metadata: { source: 'Reglamento Estudiantil Art. 45' },
+        metadata: {
+          source: 'Reglamento Estudiantil Art. 45',
+          document_type: 'reglamento',
+        },
       },
     ]);
 

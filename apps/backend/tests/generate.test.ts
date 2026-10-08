@@ -13,24 +13,7 @@ vi.mock('../lib/supabase.js', () => ({
 
 import generateHandler from '../api/v1/generate.js';
 import { generateContent } from '../lib/gemini.js';
-
-function createMockHttp(method: string, body: Record<string, unknown> = {}) {
-  const req = { method, body } as unknown as VercelRequest;
-  const state = { statusCode: 200, body: null as any };
-  const res = {
-    status: vi.fn((code: number) => {
-      state.statusCode = code;
-      return res;
-    }),
-    setHeader: vi.fn(),
-    json: vi.fn((data: unknown) => {
-      state.body = data;
-      return res;
-    }),
-  } as unknown as VercelResponse;
-
-  return { req, res, state };
-}
+import { createMockHttp } from './helpers/mockHttp.js';
 
 describe('Generate Endpoint (POST /api/v1/generate)', () => {
   beforeEach(() => {
