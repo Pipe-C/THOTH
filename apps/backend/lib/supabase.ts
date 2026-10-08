@@ -32,14 +32,20 @@ const MATCH_FUNCTION = 'match_document_chunks';
 
 let _supabase: SupabaseClient | null = null;
 
+export function resetSupabaseClient(): void {
+  _supabase = null;
+}
+
 export function getSupabaseClient(): SupabaseClient {
   if (!_supabase) {
-    if (!SUPABASE_URL || !SUPABASE_KEY) {
+    const url = process.env.SUPABASE_URL || SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY || SUPABASE_KEY;
+    if (!url || !key) {
       throw new Error(
         '[Supabase] SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY deben estar definidas en .env',
       );
     }
-    _supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
+    _supabase = createClient(url, key, {
       auth: { persistSession: false },
     });
   }

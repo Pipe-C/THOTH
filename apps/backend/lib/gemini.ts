@@ -15,6 +15,10 @@ const MODEL_ID = 'gemini-2.0-flash';
 
 let _ai: GoogleGenAI | null = null;
 
+export function resetGeminiClient(): void {
+  _ai = null;
+}
+
 export function getGeminiClient(): GoogleGenAI {
   if (!_ai) {
     const apiKey = process.env.GEMINI_API_KEY;
