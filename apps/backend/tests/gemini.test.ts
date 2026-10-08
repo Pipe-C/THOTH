@@ -1,24 +1,116 @@
-import { describe, it, expect } from 'vitest';
-import { getGeminiClient, pingGemini, buildDocumentPrompt } from '../lib/gemini.js';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+const { mockGenerateContent } = vi.hoisted(() => ({
+  mockGenerateContent: vi.fn(),
+}));
+
+vi.mock('@google/genai', () => ({
+  GoogleGenAI: class {
+    models = {
+      generateContent: mockGenerateContent,
+    };
+  },
+}));
+
+import {
+  getGeminiClient,
+  resetGeminiClient,
+  pingGemini,
+  generateContent,
+  buildDocumentPrompt,
+} from '../lib/gemini.js';
 
 describe('Gemini Client Helper', () => {
-  it('debe arrojar error si GEMINI_API_KEY no está definida', () => {
-    const originalKey = process.env.GEMINI_API_KEY;
-    delete process.env.GEMINI_API_KEY;
-
-    expect(() => getGeminiClient()).toThrow(/GEMINI_API_KEY no está definida/);
-
-    if (originalKey) process.env.GEMINI_API_KEY = originalKey;
+  beforeEach(() => {
+    vi.clearAllMocks();
+    resetGeminiClient();
+    process.env.GEMINI_API_KEY = 'test-gemini-key-12345';
   });
 
-  it('pingGemini() debe retornar false cuando falla la inicialización o conexión', async () => {
-    const originalKey = process.env.GEMINI_API_KEY;
+  it('debe arrojar error si GEMINI_API_KEY no está definida', () => {
     delete process.env.GEMINI_API_KEY;
+    expect(() => getGeminiClient()).toThrow(/GEMINI_API_KEY no está definida/);
+  });
+
+  it('debe inicializar el cliente cuando GEMINI_API_KEY está definida', () => {
+    const client = getGeminiClient();
+    expect(client).toBeDefined();
+  });
+
+  it('pingGemini() debe retornar true cuando la API responde con candidatos', async () => {
+    mockGenerateContent.mockResolvedValue({
+      candidates: [{ content: { parts: [{ text: 'pong' }] } }],
+    });
+
+    const alive = await pingGemini();
+    expect(alive).toBe(true);
+  });
+
+  it('pingGemini() debe retornar false cuando la llamada falla', async () => {
+    mockGenerateContent.mockRejectedValue(new Error('Quota limit reached'));
 
     const alive = await pingGemini();
     expect(alive).toBe(false);
+  });
 
-    if (originalKey) process.env.GEMINI_API_KEY = originalKey;
+  describe('generateContent()', () => {
+    it('debe generar contenido e identificar las fuentes utilizadas', async () => {
+      mockGenerateContent.mockResolvedValue({
+        candidates: [
+          {
+            content: {
+              parts: [{ text: 'Texto académico generado por Gemini sin clichés.' }],
+            },
+          },
+        ],
+      });
+
+      const res = await generateContent({
+        prompt: 'Explicar recursión',
+        profile: 'estudiante',
+        documentType: 'ensayo',
+        institutionalContext: 'Contexto del Pascual Bravo',
+        webContext: 'Contexto de la web',
+        wordCount: 300,
+        subject: 'Algoritmos',
+      });
+
+      expect(res.text).toBe('Texto académico generado por Gemini sin clichés.');
+      expect(res.sourcesUsed).toEqual(['institutional', 'web']);
+      expect(mockGenerateContent).toHaveBeenCalledTimes(1);
+    });
+
+    it('debe registrar sources_used como none si no hay contextos disponibles', async () => {
+      mockGenerateContent.mockResolvedValue({
+        candidates: [{ content: { parts: [{ text: 'Respuesta sin contexto previo.' }] } }],
+      });
+
+      const res = await generateContent({
+        prompt: 'Pregunta general',
+        profile: 'docente',
+        documentType: 'resumen',
+        institutionalContext: '',
+        webContext: '',
+      });
+
+      expect(res.sourcesUsed).toEqual(['none']);
+    });
+
+    it('debe arrojar error si el modelo devuelve una respuesta vacía', async () => {
+      mockGenerateContent.mockResolvedValue({
+        candidates: [{ content: { parts: [{ text: '' }] } }],
+      });
+
+      await expect(
+        generateContent({
+          prompt: 'Pregunta',
+          profile: 'estudiante',
+          documentType: 'ensayo',
+          institutionalContext: '',
+          webContext: '',
+        }),
+      ).rejects.toThrow(/La respuesta llegó vacía/);
+    });
   });
 
   describe('buildDocumentPrompt()', () => {

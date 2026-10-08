@@ -13,6 +13,7 @@ vi.mock('../lib/supabase.js', () => ({
 
 import generateHandler from '../api/v1/generate.js';
 import { generateContent } from '../lib/gemini.js';
+import { searchDocuments } from '../lib/supabase.js';
 import { createMockHttp } from './helpers/mockHttp.js';
 
 describe('Generate Endpoint (POST /api/v1/generate)', () => {
@@ -125,6 +126,51 @@ describe('Generate Endpoint (POST /api/v1/generate)', () => {
 
       expect(state.statusCode).toBe(502);
       expect(state.body.error.code).toBe('LLM_ERROR');
+    });
+
+    it('debe incluir contexto institucional si hay chunks por encima del umbral', async () => {
+      vi.mocked(searchDocuments).mockResolvedValueOnce([
+        {
+          id: 'chunk_1',
+          content: 'Contenido relevante del pensum',
+          similarity: 0.85,
+          metadata: { source: 'pensum.pdf', document_type: 'pensum' },
+        },
+      ]);
+      vi.mocked(generateContent).mockResolvedValueOnce({
+        text: 'Respuesta basada en el pensum.',
+        sourcesUsed: ['institutional'],
+      });
+
+      const { req, res, state } = createMockHttp('POST', {
+        prompt: 'Requisitos actuales de graduacion',
+        profile: 'estudiante',
+        documentType: 'resumen',
+        userId: 'u1',
+      });
+
+      await generateHandler(req, res);
+
+      expect(state.statusCode).toBe(200);
+      expect(state.body.data.sources_used).toContain('institutional');
+    });
+
+    it('debe responder 502 DB_ERROR si la base vectorial falla con prefijo [Supabase]', async () => {
+      vi.mocked(searchDocuments).mockRejectedValueOnce(
+        new Error('[Supabase] Conexión perdida con pgvector'),
+      );
+
+      const { req, res, state } = createMockHttp('POST', {
+        prompt: 'Prueba supabase error',
+        profile: 'estudiante',
+        documentType: 'resumen',
+        userId: 'u1',
+      });
+
+      await generateHandler(req, res);
+
+      expect(state.statusCode).toBe(502);
+      expect(state.body.error.code).toBe('DB_ERROR');
     });
 
     it('debe responder 500 INTERNAL_ERROR ante errores inesperados', async () => {
