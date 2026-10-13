@@ -8,20 +8,18 @@ import {
   FlatList,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { MainStackParamList } from '../types/navigation';
+import { RootStackParamList } from '../navigation/types';
 import { Display, Subtitle, CardHeader, Body, MicroCopy } from '../components/Typography';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { Badge } from '../components/Badge';
-import { MOCK_DIRECTORY_ITEMS } from '../services/mockData';
+import { MOCK_DIRECTORY_ITEMS, MOCK_CURRENT_USER } from '../services/mockData';
 import { DocumentHistoryItem, DocumentType, UserProfileRole } from '../types';
 import { styles } from '../styles/DirectoryScreen.styles';
-import { useAuth } from "../context/AuthContext";
 
-type Props = NativeStackScreenProps<MainStackParamList, 'Directory'>;
+type Props = NativeStackScreenProps<RootStackParamList, 'Directory'>;
 
 export const DirectoryScreen: React.FC<Props> = ({ navigation, route }) => {
-  const { user, logout } = useAuth();
   const [activeRole, setActiveRole] = useState<UserProfileRole>(
     route.params?.activeRole || 'estudiante'
   );
@@ -68,21 +66,21 @@ export const DirectoryScreen: React.FC<Props> = ({ navigation, route }) => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        {/* Superior Header with Profile */}
+        {/* Header Superior con Perfil */}
         <View style={styles.header}>
           <View style={styles.headerTop}>
             <View>
-              <Display style={styles.appTitle}>TOTH</Display>
-              <MicroCopy style={styles.userEmail}>{user.email}</MicroCopy>
+              <Text style={styles.appTitle}>TOTH</Text>
+              <MicroCopy style={styles.userEmail}>{MOCK_CURRENT_USER.email}</MicroCopy>
             </View>
             <TouchableOpacity
               activeOpacity={0.8}
               onPress={() => navigation.navigate('RoleSelect', { currentRole: activeRole })}
               style={styles.profileBadge}
             >
-              <Body style={styles.profileBadgeText}>
+              <Text style={styles.profileBadgeText}>
                 Rol: {activeRole === 'estudiante' ? 'Estudiante' : 'Docente'} ▾
-              </Body>
+              </Text>
             </TouchableOpacity>
           </View>
 
@@ -98,7 +96,7 @@ export const DirectoryScreen: React.FC<Props> = ({ navigation, route }) => {
           </View>
         </View>
 
-        {/* Document Type Filter Bar */}
+        {/* Barra de Filtros por Tipo de Documento */}
         <View style={styles.filterBar}>
           <ScrollView
             horizontal
@@ -192,7 +190,7 @@ export const DirectoryScreen: React.FC<Props> = ({ navigation, route }) => {
           </ScrollView>
         </View>
 
-        {/* Directory Document List */}
+        {/* Listado de Documentos del Directorio */}
         <FlatList
           data={filteredItems}
           keyExtractor={(item) => item.id}

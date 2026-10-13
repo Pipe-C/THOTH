@@ -1,30 +1,31 @@
 /**
- * THOTH Design System Tokens — "Serenidad Académica"
- * Unique and Truthfully source for THOTH (I.U. Pascual Bravo) visual identity
+ * TOTH Design System Tokens — "Serenidad Académica"
+ * Fuente única de verdad para la identidad visual de TOTH (I.U. Pascual Bravo)
+ * Consistente con AGENTS.md Sección 2
  */
 
 export const colors = {
-  // 2.1 Color palette
-  primary: '#2D4A3E',       // Deep Moss Green — Principal buttons, headers, active profile state
-  accent: '#C87D55',        // Soft terracotta — Toggles ON (Anti-Cliché), loaders, highlight badges
-  background: '#FDFBF7',    // Warm Cream — Screens background
-  surface: '#FFFFFF',       // Pure White — Cards, inputs, containers
-  textPrimary: '#1E293B',   // Dark slate — Titles, body text
-  textSecondary: '#64748B', // Ash Grey — Subtitles, placeholders
-  validation: '#E8EFEA',    // Soft mint green  — Informative Banners , badge "RAG institucional validado"
-
-  // States and borders
-  border: 'rgba(45, 74, 62, 0.1)',     // Deep moss green border (10% opacity)
-  borderFocus: '#2D4A3E',              // Active border/focus
-  toggleOff: '#E2E8F0',                // Inactive Grey for Toggle OFF
-  toggleThumb: '#FFFFFF',              // White toggle Thumb
-
-  // Error states
-  errorBg: '#FEE2E2',                  // Error banners background
-  errorBorder: '#EF4444',             // Error banners border
-  errorText: '#B91C1C',               // Error banners text
+  // 2.1 Paleta de Color
+  primary: '#2D4A3E',       // Verde Musgo Profundo — Botones principales, headers, estado activo de perfil
+  accent: '#C87D55',        // Terracota Suave — Toggles ON (Anti-Cliché), loaders, badges destacados
+  background: '#FDFBF7',    // Crema Cálido — Fondo de pantallas
+  surface: '#FFFFFF',       // Blanco Puro — Cards, inputs, contenedores
+  textPrimary: '#1E293B',   // Pizarra Oscuro — Títulos, cuerpo de texto
+  textSecondary: '#64748B', // Gris Ceniza — Subtítulos, placeholders
+  validation: '#E8EFEA',    // Verde Menta Suave — Banners informativos, badge "RAG institucional validado"
   
-  // Semantic aliases
+  // Estados y bordes
+  border: 'rgba(45, 74, 62, 0.1)',     // Borde suave verde musgo (10% opacidad)
+  borderFocus: '#2D4A3E',              // Borde activo/focus
+  toggleOff: '#E2E8F0',                // Gris inactivo para Toggle OFF
+  toggleThumb: '#FFFFFF',              // Thumb blanco de toggle
+
+  // Estados de error
+  errorBg: '#FEE2E2',                  // Fondo de banners de error
+  errorBorder: '#EF4444',             // Borde de banners de error
+  errorText: '#B91C1C',               // Texto de banners de error
+  
+  // Aliases semánticos
   mossGreen: '#2D4A3E',
   terracotta: '#C87D55',
   warmCream: '#FDFBF7',
@@ -42,7 +43,7 @@ export const typography = {
     semiBold: 'Lexend-SemiBold',
     bold: 'Lexend-Bold',
   },
-  // Typographic scales
+  // Escalas tipográficas de AGENTS.md Sección 2.2
   scales: {
     display: {
       fontSize: 30, // 3xl
