@@ -1,6 +1,12 @@
 {
   "version": 2,
-  "framework": null,
+  "outputDirectory": "dist",
+  "builds": [
+    {
+      "src": "api/**/*.ts",
+      "use": "@vercel/node"
+    }
+  ],
   "routes": [
     {
       "src": "/api/v1/health",
