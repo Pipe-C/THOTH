@@ -1,42 +1,35 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { VercelRequest, VercelResponse } from '@vercel/node';
+import request from 'supertest';
 
 vi.mock('../lib/supabase.js', () => ({
   searchDocuments: vi.fn(),
   SIMILARITY_THRESHOLD: 0.75,
 }));
 
-import vectorSearchHandler from '../api/v1/vector-search.js';
+import app from '../src/app.js';
 import { searchDocuments } from '../lib/supabase.js';
-import { createMockHttp } from './helpers/mockHttp.js';
 
 describe('Vector Search Endpoint (POST /api/v1/vector-search)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('debe rechazar métodos distintos a POST con 405', async () => {
-    const { req, res, state } = createMockHttp('GET');
-    await vectorSearchHandler(req, res);
-
-    expect(state.statusCode).toBe(405);
-    expect(state.body.error.code).toBe('METHOD_NOT_ALLOWED');
-  });
-
   it('debe rechazar si falta el campo query con 400', async () => {
-    const { req, res, state } = createMockHttp('POST', {});
-    await vectorSearchHandler(req, res);
+    const response = await request(app)
+      .post('/api/v1/vector-search')
+      .send({});
 
-    expect(state.statusCode).toBe(400);
-    expect(state.body.error.code).toBe('MISSING_FIELDS');
+    expect(response.status).toBe(400);
+    expect(response.body.error.code).toBe('MISSING_FIELDS');
   });
 
   it('debe rechazar consultas vacías con 400', async () => {
-    const { req, res, state } = createMockHttp('POST', { query: '   ' });
-    await vectorSearchHandler(req, res);
+    const response = await request(app)
+      .post('/api/v1/vector-search')
+      .send({ query: '   ' });
 
-    expect(state.statusCode).toBe(400);
-    expect(state.body.error.code).toBe('VALIDATION_ERROR');
+    expect(response.status).toBe(400);
+    expect(response.body.error.code).toBe('VALIDATION_ERROR');
   });
 
   it('debe retornar resultados vectoriales institucionales con 200', async () => {
@@ -52,16 +45,17 @@ describe('Vector Search Endpoint (POST /api/v1/vector-search)', () => {
       },
     ]);
 
-    const { req, res, state } = createMockHttp('POST', {
-      query: 'requisitos de grado en ingenieria de software',
-      topK: 3,
-    });
-    await vectorSearchHandler(req, res);
+    const response = await request(app)
+      .post('/api/v1/vector-search')
+      .send({
+        query: 'requisitos de grado en ingenieria de software',
+        topK: 3,
+      });
 
-    expect(state.statusCode).toBe(200);
-    expect(state.body.ok).toBe(true);
-    expect(Array.isArray(state.body.data.results)).toBe(true);
-    expect(state.body.data.results.length).toBe(1);
-    expect(state.body.data.meta.query).toBe('requisitos de grado en ingenieria de software');
+    expect(response.status).toBe(200);
+    expect(response.body.ok).toBe(true);
+    expect(Array.isArray(response.body.data.results)).toBe(true);
+    expect(response.body.data.results.length).toBe(1);
+    expect(response.body.data.meta.query).toBe('requisitos de grado en ingenieria de software');
   });
 });

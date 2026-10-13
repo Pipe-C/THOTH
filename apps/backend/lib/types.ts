@@ -90,5 +90,6 @@ export interface GenerateResponse {
     documentType: DocumentType;
     regenerated: boolean;
     processingTimeMs: number;
+    userId?: string;
   };
 }

@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { VercelRequest, VercelResponse } from '@vercel/node';
+import request from 'supertest';
 
-// Mock external services with correct relative routes
 vi.mock('../lib/gemini.js', () => ({
   generateContent: vi.fn(),
 }));
@@ -11,56 +10,50 @@ vi.mock('../lib/supabase.js', () => ({
   SIMILARITY_THRESHOLD: 0.75,
 }));
 
-import generateHandler from '../api/v1/generate.js';
+import app from '../src/app.js';
 import { generateContent } from '../lib/gemini.js';
 import { searchDocuments } from '../lib/supabase.js';
-import { createMockHttp } from './helpers/mockHttp.js';
 
 describe('Generate Endpoint (POST /api/v1/generate)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('debe rechazar métodos distintos a POST con 405', async () => {
-    const { req, res, state } = createMockHttp('GET');
-    await generateHandler(req, res);
-
-    expect(state.statusCode).toBe(405);
-    expect(state.body.error.code).toBe('METHOD_NOT_ALLOWED');
-  });
-
   it('debe rechazar solicitudes con campos incompletos con 400', async () => {
-    const { req, res, state } = createMockHttp('POST', { prompt: 'Explicar herencia' });
-    await generateHandler(req, res);
+    const response = await request(app)
+      .post('/api/v1/generate')
+      .send({ prompt: 'Explicar herencia' });
 
-    expect(state.statusCode).toBe(400);
-    expect(state.body.error.code).toBe('MISSING_FIELDS');
+    expect(response.status).toBe(400);
+    expect(response.body.error.code).toBe('MISSING_FIELDS');
   });
 
   it('debe rechazar perfiles inválidos con 400', async () => {
-    const { req, res, state } = createMockHttp('POST', {
-      prompt: 'Explicar recursión',
-      profile: 'rector',
-      documentType: 'ensayo',
-      userId: 'usr_1',
-    });
-    await generateHandler(req, res);
+    const response = await request(app)
+      .post('/api/v1/generate')
+      .send({
+        prompt: 'Explicar recursión',
+        profile: 'rector',
+        documentType: 'ensayo',
+        userId: 'usr_1',
+      });
 
-    expect(state.statusCode).toBe(400);
-    expect(state.body.error.code).toBe('VALIDATION_ERROR');
+    expect(response.status).toBe(400);
+    expect(response.body.error.code).toBe('VALIDATION_ERROR');
   });
 
   it('debe rechazar tipos de documentos inválidos con 400', async () => {
-    const { req, res, state } = createMockHttp('POST', {
-      prompt: 'Explicar recursión',
-      profile: 'estudiante',
-      documentType: 'novela',
-      userId: 'usr_1',
-    });
-    await generateHandler(req, res);
+    const response = await request(app)
+      .post('/api/v1/generate')
+      .send({
+        prompt: 'Explicar recursión',
+        profile: 'estudiante',
+        documentType: 'novela',
+        userId: 'usr_1',
+      });
 
-    expect(state.statusCode).toBe(400);
-    expect(state.body.error.code).toBe('VALIDATION_ERROR');
+    expect(response.status).toBe(400);
+    expect(response.body.error.code).toBe('VALIDATION_ERROR');
   });
 
   it('debe orquestar exitosamente la generación y filtro anti-cliché con 200', async () => {
@@ -69,20 +62,20 @@ describe('Generate Endpoint (POST /api/v1/generate)', () => {
       sourcesUsed: ['institutional'],
     });
 
-    const { req, res, state } = createMockHttp('POST', {
-      prompt: 'Explica el concepto de encapsulamiento',
-      profile: 'estudiante',
-      documentType: 'ensayo',
-      userId: 'usr_felipe_123',
-    });
+    const response = await request(app)
+      .post('/api/v1/generate')
+      .send({
+        prompt: 'Explica el concepto de encapsulamiento',
+        profile: 'estudiante',
+        documentType: 'ensayo',
+        userId: 'usr_felipe_123',
+      });
 
-    await generateHandler(req, res);
-
-    expect(state.statusCode).toBe(200);
-    expect(state.body.ok).toBe(true);
-    expect(state.body.data.text).toContain('encapsulación');
-    expect(state.body.data.sources_used).toBeDefined();
-    expect(state.body.data.metadata.profile).toBe('estudiante');
+    expect(response.status).toBe(200);
+    expect(response.body.ok).toBe(true);
+    expect(response.body.data.text).toContain('encapsulación');
+    expect(response.body.data.sources_used).toBeDefined();
+    expect(response.body.data.metadata.profile).toBe('estudiante');
   });
 
   it('debe regenerar el texto si el primer intento contiene muletillas de IA', async () => {
@@ -96,36 +89,36 @@ describe('Generate Endpoint (POST /api/v1/generate)', () => {
         sourcesUsed: ['institutional'],
       });
 
-    const { req, res, state } = createMockHttp('POST', {
-      prompt: 'Explica el polimorfismo',
-      profile: 'docente',
-      documentType: 'guia_clase',
-      userId: 'usr_docente_456',
-    });
+    const response = await request(app)
+      .post('/api/v1/generate')
+      .send({
+        prompt: 'Explica el polimorfismo',
+        profile: 'docente',
+        documentType: 'guia_clase',
+        userId: 'usr_docente_456',
+      });
 
-    await generateHandler(req, res);
-
-    expect(state.statusCode).toBe(200);
-    expect(state.body.ok).toBe(true);
-    expect(state.body.data.metadata.regenerated).toBe(true);
-    expect(state.body.data.text).not.toContain('En conclusión');
+    expect(response.status).toBe(200);
+    expect(response.body.ok).toBe(true);
+    expect(response.body.data.metadata.regenerated).toBe(true);
+    expect(response.body.data.text).not.toContain('En conclusión');
   });
 
   describe('Manejo de errores', () => {
     it('debe responder 502 LLM_ERROR si Gemini falla con prefijo [Gemini]', async () => {
       vi.mocked(generateContent).mockRejectedValue(new Error('[Gemini] Quota exceeded'));
 
-      const { req, res, state } = createMockHttp('POST', {
-        prompt: 'Prueba error',
-        profile: 'estudiante',
-        documentType: 'resumen',
-        userId: 'u1',
-      });
+      const response = await request(app)
+        .post('/api/v1/generate')
+        .send({
+          prompt: 'Prueba error',
+          profile: 'estudiante',
+          documentType: 'resumen',
+          userId: 'u1',
+        });
 
-      await generateHandler(req, res);
-
-      expect(state.statusCode).toBe(502);
-      expect(state.body.error.code).toBe('LLM_ERROR');
+      expect(response.status).toBe(502);
+      expect(response.body.error.code).toBe('LLM_ERROR');
     });
 
     it('debe incluir contexto institucional si hay chunks por encima del umbral', async () => {
@@ -142,17 +135,17 @@ describe('Generate Endpoint (POST /api/v1/generate)', () => {
         sourcesUsed: ['institutional'],
       });
 
-      const { req, res, state } = createMockHttp('POST', {
-        prompt: 'Requisitos actuales de graduacion',
-        profile: 'estudiante',
-        documentType: 'resumen',
-        userId: 'u1',
-      });
+      const response = await request(app)
+        .post('/api/v1/generate')
+        .send({
+          prompt: 'Requisitos actuales de graduacion',
+          profile: 'estudiante',
+          documentType: 'resumen',
+          userId: 'u1',
+        });
 
-      await generateHandler(req, res);
-
-      expect(state.statusCode).toBe(200);
-      expect(state.body.data.sources_used).toContain('institutional');
+      expect(response.status).toBe(200);
+      expect(response.body.data.sources_used).toContain('institutional');
     });
 
     it('debe responder 502 DB_ERROR si la base vectorial falla con prefijo [Supabase]', async () => {
@@ -160,33 +153,33 @@ describe('Generate Endpoint (POST /api/v1/generate)', () => {
         new Error('[Supabase] Conexión perdida con pgvector'),
       );
 
-      const { req, res, state } = createMockHttp('POST', {
-        prompt: 'Prueba supabase error',
-        profile: 'estudiante',
-        documentType: 'resumen',
-        userId: 'u1',
-      });
+      const response = await request(app)
+        .post('/api/v1/generate')
+        .send({
+          prompt: 'Prueba supabase error',
+          profile: 'estudiante',
+          documentType: 'resumen',
+          userId: 'u1',
+        });
 
-      await generateHandler(req, res);
-
-      expect(state.statusCode).toBe(502);
-      expect(state.body.error.code).toBe('DB_ERROR');
+      expect(response.status).toBe(502);
+      expect(response.body.error.code).toBe('DB_ERROR');
     });
 
     it('debe responder 500 INTERNAL_ERROR ante errores inesperados', async () => {
       vi.mocked(generateContent).mockRejectedValue(new Error('Fallo general del servidor'));
 
-      const { req, res, state } = createMockHttp('POST', {
-        prompt: 'Prueba error',
-        profile: 'estudiante',
-        documentType: 'resumen',
-        userId: 'u1',
-      });
+      const response = await request(app)
+        .post('/api/v1/generate')
+        .send({
+          prompt: 'Prueba error',
+          profile: 'estudiante',
+          documentType: 'resumen',
+          userId: 'u1',
+        });
 
-      await generateHandler(req, res);
-
-      expect(state.statusCode).toBe(500);
-      expect(state.body.error.code).toBe('INTERNAL_ERROR');
+      expect(response.status).toBe(500);
+      expect(response.body.error.code).toBe('INTERNAL_ERROR');
     });
   });
 });
