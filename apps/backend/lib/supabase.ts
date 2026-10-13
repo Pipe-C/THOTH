@@ -1,7 +1,7 @@
 // ─────────────────────────────────────────────────────────────
 // lib/supabase.ts — Supabase client (pgvector) for THOTH
 // ─────────────────────────────────────────────────────────────
-// Responsability: initialize supabase client and expose
+// Responsibility: initialize supabase client and expose
 // Vectorial search function by cosen similarity based on
 // documental institutional documentation of Pascual Bravo.
 // ─────────────────────────────────────────────────────────────
