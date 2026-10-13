@@ -1,15 +1,15 @@
 // ─────────────────────────────────────────────────────────────
-// lib/gemini.ts — Cliente Gemini 3.8 Flash para TOTH
+// lib/gemini.ts — Gemini 3.8 Flash client for THOTH
 // ─────────────────────────────────────────────────────────────
-// Responsabilidad: construir el prompt final combinando el system
-// prompt de identidad, el negative prompt anti-cliché, el perfil
-// de usuario y el contexto RAG híbrido; luego invocar a Gemini.
+// Responsibility: construct final prompt mixing the prompt system
+// identity, anti-cliche negative prompt, user profile
+// and hybrid RGA context; Then invoke Gemini.
 // ─────────────────────────────────────────────────────────────
 
 import { GoogleGenAI } from '@google/genai';
 import type { UserProfile, DocumentType, ContextSource } from './types.js';
 
-// ─── Configuración ────────────────────────────────────────────
+// ─── Configuration ────────────────────────────────────────────
 
 const MODEL_ID = 'gemini-2.0-flash';
 
@@ -30,7 +30,7 @@ export function getGeminiClient(): GoogleGenAI {
   return _ai;
 }
 
-// ─── Prompts del sistema (ver COMPORTAMIENTO_DEL_ASISTENTE.md) ──
+// ─── System prompts (ver COMPORTAMIENTO_DEL_ASISTENTE.md) ──
 
 const SYSTEM_PROMPT_BASE = `Eres TOTH, un asistente académico de generación de contenido para la comunidad de la I.U. Pascual Bravo. Tu nombre honra a Thot, deidad egipcia de la escritura y la sabiduría: tu tarea es producir conocimiento claro, riguroso y con voz propia — no texto reciclado.
 
@@ -74,7 +74,7 @@ PERFIL ACTIVO: DOCENTE
 - Prioriza precisión terminológica y referencias al material institucional.`,
 };
 
-// ─── Plantillas de prompt por tipo de documento ──────────────
+// ─── Prompts templates by document type ──────────────
 
 export function buildDocumentPrompt(
   type: DocumentType,
@@ -101,7 +101,7 @@ export function buildDocumentPrompt(
   }
 }
 
-// ─── Función principal de generación ─────────────────────────
+// ─── Principal function of generation ─────────────────────────
 
 export interface GeminiGenerateParams {
   prompt: string;
@@ -133,20 +133,20 @@ export async function generateContent(
 
   const ai = getGeminiClient();
 
-  // Determinar fuentes usadas
+  // Determine used fonts
   const sourcesUsed: ContextSource[] = [];
   if (institutionalContext.trim()) sourcesUsed.push('institutional');
   if (webContext.trim()) sourcesUsed.push('web');
   if (sourcesUsed.length === 0) sourcesUsed.push('none');
 
-  // Construir system instruction
+  // Construct system instruction
   const systemInstruction = [
     SYSTEM_PROMPT_BASE,
     NEGATIVE_PROMPT,
     PROFILE_PROMPTS[profile],
   ].join('\n\n');
 
-  // Construir el mensaje usuario con el contexto RAG
+  // Construct user message with RAG context
   const contextBlock = `CONTEXTO INSTITUCIONAL (Pascual Bravo — prioridad alta):
 ${institutionalContext || 'Sin contexto institucional disponible para esta consulta.'}
 
@@ -177,7 +177,7 @@ ${buildDocumentPrompt(documentType, prompt, wordCount, subject)}`;
   return { text, sourcesUsed };
 }
 
-/** Verifica conectividad con Gemini (genera un token mínimo). */
+/** Verify connectivity with Gemini (Generate minimum token). */
 export async function pingGemini(): Promise<boolean> {
   try {
     const ai = getGeminiClient();

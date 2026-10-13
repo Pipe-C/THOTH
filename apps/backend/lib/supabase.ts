@@ -1,34 +1,34 @@
 // ─────────────────────────────────────────────────────────────
-// lib/supabase.ts — Cliente Supabase (pgvector) para TOTH
+// lib/supabase.ts — Supabase client (pgvector) for THOTH
 // ─────────────────────────────────────────────────────────────
-// Responsabilidad: inicializar el cliente Supabase y exponer
-// la función de búsqueda vectorial por similitud coseno sobre
-// el fondo documental institucional del Pascual Bravo.
+// Responsibility: initialize supabase client and expose
+// Vectorial search function by cosen similarity based on
+// documental institutional documentation of Pascual Bravo.
 // ─────────────────────────────────────────────────────────────
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import type { VectorSearchResult } from './types.js';
 
-// ─── Configuración ────────────────────────────────────────────
+// ─── Configuration ────────────────────────────────────────────
 
 const SUPABASE_URL = process.env.SUPABASE_URL ?? '';
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
 
 /**
- * Umbral mínimo de similitud coseno (0–1) para considerar un chunk
- * como relevante. Por debajo de este valor se activa el fallback web.
+ * Minimal threshold cosen similarity (0–1) to be guessed a relevant
+ * chunk. Below this value the fallback web is activated.
  */
 export const SIMILARITY_THRESHOLD = Number.parseFloat(
   process.env.SIMILARITY_THRESHOLD ?? '0.75',
 );
 
-/** Nombre de la tabla donde viven los embeddings institucionales */
+/** Name of the table where institutional embeddings are */
 const EMBEDDINGS_TABLE = 'document_chunks';
 
-/** Nombre de la función RPC de Supabase para búsqueda por similitud */
+/** Name of supabase RPC function for similarity function */
 const MATCH_FUNCTION = 'match_document_chunks';
 
-// ─── Singleton del cliente ────────────────────────────────────
+// ─── Client singleton ────────────────────────────────────
 
 let _supabase: SupabaseClient | null = null;
 
@@ -52,15 +52,15 @@ export function getSupabaseClient(): SupabaseClient {
   return _supabase;
 }
 
-// ─── Función principal: búsqueda vectorial ───────────────────
+// ─── Principal function: vectorial search ───────────────────
 
 /**
- * Genera el embedding de `query` y realiza una búsqueda por similitud
- * coseno contra el fondo documental institucional.
+ * Generates `query` embedding and makes cosen similarity search
+ * against institutional documentation.
  *
- * @param query   Texto de la consulta del usuario.
- * @param topK    Número máximo de chunks a recuperar (default: 5).
- * @returns       Lista de resultados ordenados por similitud descendente.
+ * @param query   Text of the user consultation.
+ * @param topK    Max number of chunks to recover (default: 5).
+ * @returns       List of results by descending similarity order.
  */
 export async function searchDocuments(
   query: string,
@@ -68,9 +68,12 @@ export async function searchDocuments(
 ): Promise<VectorSearchResult[]> {
   const supabase = getSupabaseClient();
 
-  // 1. Generar embedding de la consulta usando Supabase Edge Function
-  //    (la función `embed` de Supabase usa el mismo modelo de embeddings
-  //    que se usó al indexar los documentos, garantizando compatibilidad).
+  // 1. Generate embedding using Supabase Edge Function
+  //    (the `embed` function of Supabase uses the same embedding model
+  //    to index documents, guaranteeing compatibility).
+
+
+
   const { data: embeddingData, error: embeddingError } =
     await supabase.functions.invoke<{ embedding: number[] }>('embed', {
       body: { input: query },
@@ -82,7 +85,7 @@ export async function searchDocuments(
     );
   }
 
-  // 2. Búsqueda por similitud coseno vía función RPC
+  // 2. Similarity cosen search by RPC function
   const { data: chunks, error: searchError } = await supabase.rpc(
     MATCH_FUNCTION,
     {
@@ -98,7 +101,7 @@ export async function searchDocuments(
     );
   }
 
-  // 3. Mapear al tipo interno
+  // 3. Internal type mapping
   return (chunks ?? []).map(
     (chunk: {
       id: string;
@@ -118,11 +121,11 @@ export async function searchDocuments(
   );
 }
 
-// ─── Utilidad: verificar conexión ────────────────────────────
+// ─── Utility: Verify connection ────────────────────────────
 
 /**
- * Verifica que Supabase sea accesible. Se usa en el health check.
- * No hace ninguna query costosa; solo chequea la tabla de chunks.
+ * Verify that supabase is accessibility. Use in health check.
+ * Does not makes a expensive query; Only checks chunks table.
  */
 export async function pingSupabase(): Promise<boolean> {
   try {

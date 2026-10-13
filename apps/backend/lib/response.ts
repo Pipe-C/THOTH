@@ -1,14 +1,14 @@
 // ─────────────────────────────────────────────────────────────
-// lib/response.ts — Estándar de respuestas y errores de TOTH
+// lib/response.ts — Standard response and errors of THOTH
 // ─────────────────────────────────────────────────────────────
-// Todos los endpoints deben usar estas funciones para garantizar
-// una forma consistente de respuesta en toda la API.
+// All endpoints have to use those functions to guarantee
+// a consistent response form in all the API.
 // ─────────────────────────────────────────────────────────────
 
 import { randomUUID } from 'node:crypto';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-// ─── Códigos de error internos ────────────────────────────────
+// ─── Internal error codes ────────────────────────────────
 
 export const ErrorCode = {
   // 400
@@ -34,7 +34,7 @@ export const ErrorCode = {
 
 export type ErrorCodeType = (typeof ErrorCode)[keyof typeof ErrorCode];
 
-// ─── Forma canónica de respuesta exitosa ──────────────────────
+// ─── Canonic form of success response ──────────────────────
 
 export interface ApiSuccess<T = unknown> {
   ok: true;
@@ -46,7 +46,7 @@ export interface ApiSuccess<T = unknown> {
   };
 }
 
-// ─── Forma canónica de respuesta de error ─────────────────────
+// ─── Canonic form of error answer ─────────────────────
 
 export interface ApiError {
   ok: false;
@@ -54,7 +54,7 @@ export interface ApiError {
   error: {
     code: ErrorCodeType;
     message: string;
-    /** Detalle técnico visible solo en desarrollo */
+    /** Technique details, visible only in develop */
     detail?: string;
   };
   meta?: {
@@ -63,13 +63,13 @@ export interface ApiError {
   };
 }
 
-// ─── Generador de ID de solicitud ────────────────────────────
+// ─── Generated ID request ────────────────────────────
 
 function generateRequestId(): string {
   return `toth-${Date.now()}-${randomUUID().slice(0, 8)}`;
 }
 
-// ─── Helper: respuesta exitosa ────────────────────────────────
+// ─── Helper: success request ────────────────────────────────
 
 export function sendSuccess<T>(
   res: VercelResponse,
@@ -90,7 +90,7 @@ export function sendSuccess<T>(
   res.status(httpStatus).json(payload);
 }
 
-// ─── Helper: respuesta de error ───────────────────────────────
+// ─── Helper: error request ───────────────────────────────
 
 export function sendError(
   res: VercelResponse,
@@ -119,7 +119,7 @@ export function sendError(
   res.status(httpStatus).json(payload);
 }
 
-// ─── Helper: validar método HTTP ─────────────────────────────
+// ─── Helper: validate HTTP method ─────────────────────────────
 
 export function requireMethod(
   req: VercelRequest,
@@ -140,7 +140,7 @@ export function requireMethod(
   return true;
 }
 
-// ─── Helper: verificar campos requeridos ──────────────────────
+// ─── Helper: verify required camps ──────────────────────
 
 export function requireFields<T extends object>(
   body: T,

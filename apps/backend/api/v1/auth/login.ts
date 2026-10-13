@@ -1,10 +1,10 @@
 // ─────────────────────────────────────────────────────────────
-// api/v1/auth/login.ts — Endpoint 3: Login de Usuario
+// api/v1/auth/login.ts — Endpoint 3: UserLogin
 // POST /api/v1/auth/login
 // ─────────────────────────────────────────────────────────────
-// Autentica a un usuario con email y contraseña.
-// En esta fase devuelve un mock estructurado con validaciones
-// de dominio real. En Fase 4 se conecta Firebase Auth REST API.
+// Authenticates a user with email and password.
+// In this phase returns structured mock with validations
+// of real domain. In Phase 4 connects Firebase Auth REST API.
 // ─────────────────────────────────────────────────────────────
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
@@ -17,7 +17,7 @@ import {
 } from '../../../lib/response.js';
 import type { LoginRequest } from '../../../lib/types.js';
 
-// ─── Constantes ───────────────────────────────────────────────
+// ─── Constants ───────────────────────────────────────────────
 
 const ALLOWED_DOMAIN = 'pascualbravo.edu.co';
 
@@ -31,7 +31,7 @@ export default function handler(
 
   const body = req.body as Partial<LoginRequest>;
 
-  // 1. Validar campos requeridos
+  // 1. Validate required camps
   const missing = requireFields(body as LoginRequest, ['email', 'password']);
   if (missing.length > 0) {
     sendError(
@@ -45,7 +45,7 @@ export default function handler(
 
   const { email, password } = body as LoginRequest;
 
-  // 2. Validar dominio (previene intentos con cuentas externas)
+  // 2. Validate domain (prevents attempts with external accounts)
   const normalized = email.trim().toLowerCase();
   if (!normalized.endsWith(`@${ALLOWED_DOMAIN}`)) {
     sendError(
@@ -57,32 +57,32 @@ export default function handler(
     return;
   }
 
-  // 3. Validar que la contraseña no esté vacía
+  // 3. Validate password to not be empty
   if (!password || password.length < 1) {
     sendError(res, 400, ErrorCode.MISSING_FIELDS, 'La contraseña es requerida.');
     return;
   }
 
-  // 4. Autenticación (Fase 4: Firebase Auth REST API)
-  //    En Fase 4 se reemplaza por:
+  // 4. Authentication (Phase 4: Firebase Auth REST API)
+  //    In Phase 4 replace for:
   //    const result = await signInWithEmailAndPassword(auth, email, password);
   //    const idToken = await result.user.getIdToken();
-  //    Luego se verifica idToken en el servidor con admin.auth().verifyIdToken(idToken).
+  //    after verify idToken in server with admin.auth().verifyIdToken(idToken).
   //
-  //    MOCK TEMPORAL:
-  //    - Devuelve "no autorizado" para cualquier contraseña vacía (ya validado arriba).
-  //    - Simula un login exitoso con un token placeholder.
-  //    - En producción NUNCA devolver datos reales de usuario sin verificar Firebase.
+  //    TEMPORAL MOCK:
+  //    - Returns "not authorized" to any empty password (already validated).
+  //    - Simulate a success login with a placeholder token.
+  //    - In production NEVER return real user data without verifying Firebase.
 
-  // Simular que el usuario existe en el sistema (Fase 4: validar contra Firebase)
+  // Simulate that user exists in the system (Phase 4: validate against Firebase)
   const mockUid = `mock_user_${normalized.split('@')[0]}`;
 
   sendSuccess(res, {
     uid: mockUid,
     email: normalized,
-    // En Fase 4: idToken y refreshToken de Firebase
+    // In phase 4: idToken y refreshToken of Firebase
     idToken: 'MOCK_ID_TOKEN_REPLACE_IN_PHASE_4',
     expiresIn: 3600,
-    profile: 'estudiante', // En Fase 4: leer desde Firestore users/{uid}.profile
+    profile: 'estudiante', // In Phase 4: read from Firestore users/{uid}.profile
   });
 }

@@ -1,16 +1,16 @@
 // ─────────────────────────────────────────────────────────────
-// api/v1/generate.ts — Endpoint 5: Orquestador RAG + Gemini
+// api/v1/generate.ts — Endpoint 5: RAG Orchestrator + Gemini
 // POST /api/v1/generate
 // ─────────────────────────────────────────────────────────────
-// Flujo completo:
-//  1. Valida el payload de entrada.
-//  2. Busca contexto institucional en Supabase (vector search).
-//  3. Si la similitud es baja o el tema requiere vigencia,
-//     complementa con búsqueda web (Tavily — Fase 3 completa).
-//  4. Invoca a Gemini con el contexto combinado y los prompts
-//     definidos en COMPORTAMIENTO_DEL_ASISTENTE.md.
-//  5. Aplica el filtro anti-cliché; regenera si hay muletillas.
-//  6. Devuelve la respuesta sanitizada con metadata de fuentes.
+// Complete flow:
+//  1. Validate entry payload.
+//  2. Search institutional context in Supabase (vector search).
+//  3. If similarity is low or topic requires validity,
+//     complements with web search (Tavily — complete Phase 3).
+//  4. Invoke Gemini with mixed context and prompts
+//     defined on COMPORTAMIENTO_DEL_ASISTENTE.md.
+//  5. Applies anti-cliche filter; regenerates if there is filler words.
+//  6. Returns sanitized response with source metadata.
 // ─────────────────────────────────────────────────────────────
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
@@ -26,21 +26,21 @@ import { generateContent } from '../../lib/gemini.js';
 import { analyzeText, buildRegenerationPrompt } from '../../lib/antiClicheFilter.js';
 import type { GenerateRequest, ContextSource } from '../../lib/types.js';
 
-// ─── Constantes ───────────────────────────────────────────────
+// ─── Constants ───────────────────────────────────────────────
 
-/** Máximo de intentos de regeneración por filtro anti-cliché */
+/** Maximum regeneration attempts by anti-cliche filter */
 const MAX_REGENERATION_ATTEMPTS = 2;
 
-/** Número de chunks institucionales a recuperar por defecto */
+/** Number of institutional chunks to recover by default */
 const DEFAULT_TOP_K = 5;
 
-// ─── Búsqueda web (Tavily) ────────────────────────────────────
-// En Fase 3 completa: conectar con la API de Tavily.
-// Por ahora, función stub que devuelve string vacío.
+// ─── Web search (Tavily) ────────────────────────────────────
+// In complete Phase 3: connect Tavily API.
+// For now, stub function returns empty string.
 async function fetchWebContext(_query: string): Promise<string> {
   const tavilyKey = process.env.TAVILY_API_KEY;
   if (!tavilyKey) {
-    // Sin API key: no hay contexto web disponible
+    // No API key: no available web context
     return '';
   }
 
@@ -79,7 +79,7 @@ async function fetchWebContext(_query: string): Promise<string> {
   }
 }
 
-// ─── Tipos y validación auxiliar ──────────────────────────────
+// ─── Types and helper validation ──────────────────────────────
 
 interface ValidationError {
   status: number;
@@ -143,7 +143,7 @@ function validateGeneratePayload(body: Partial<GenerateRequest>): ValidationResu
   return { data: body as GenerateRequest };
 }
 
-// ─── Resolución de contexto híbrido ───────────────────────────
+// ─── Resolution of hybrid context ───────────────────────────
 
 interface HybridContextResult {
   institutionalContext: string;
@@ -189,7 +189,7 @@ async function resolveHybridContext(prompt: string): Promise<HybridContextResult
   return { institutionalContext, webContext, sourcesUsed };
 }
 
-// ─── Generación con filtro anti-cliché ────────────────────────
+// ─── Generate with anti-cliche filter ────────────────────────
 
 interface GenerationFilterResult {
   text: string;
@@ -238,7 +238,7 @@ async function generateWithQualityFilter(
   return { text: generatedText, regenerated };
 }
 
-// ─── Manejo de errores de generación ──────────────────────────
+// ─── Error handle generation ──────────────────────────
 
 function handleGenerateError(res: VercelResponse, err: unknown): void {
   const message = err instanceof Error ? err.message : String(err);
