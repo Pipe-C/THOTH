@@ -24,7 +24,12 @@ export function getGeminiClient(): GoogleGenAI {
     if (!apiKey) {
       throw new Error('[Gemini] GEMINI_API_KEY no está definida en .env');
     }
-    _ai = new GoogleGenAI({ apiKey });
+    _ai = new GoogleGenAI({
+      apiKey,
+      httpOptions: {
+        timeout: 15_000,
+      },
+    });
   }
   return _ai;
 }
@@ -185,8 +190,13 @@ export async function pingGemini(): Promise<boolean> {
       contents: [{ role: 'user', parts: [{ text: 'ping' }] }],
     });
     return !!r.candidates?.[0];
+
   } catch (error) {
     console.error('[Gemini] Error de conexión:', error);
+    if (error instanceof Error) {
+      console.error('[Gemini] Mensaje:', error.message);
+      console.error('[Gemini] Causa:', error.cause);
+    }
     return false;
   }
 }
