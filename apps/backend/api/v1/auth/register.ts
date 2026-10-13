@@ -1,11 +1,11 @@
 // ─────────────────────────────────────────────────────────────
-// api/v1/auth/register.ts — Endpoint 2: Registro de Usuario
+// api/v1/auth/register.ts — Endpoint 2: User Register
 // POST /api/v1/auth/register
 // ─────────────────────────────────────────────────────────────
-// Registra un nuevo usuario validando que el email pertenezca
-// al dominio institucional @pascualbravo.edu.co.
-// Guarda el perfil en Firestore (Fase 4); en esta fase devuelve
-// un mock estructurado real con validaciones completas.
+// Registers a new user validating that email is part
+// of institutional domain @pascualbravo.edu.co.
+// Saves profile in Firestore (Phase 4); in this phase
+// returns real structured mock with complete validations.
 // ─────────────────────────────────────────────────────────────
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
@@ -18,14 +18,14 @@ import {
 } from '../../../lib/response.js';
 import type { RegisterRequest } from '../../../lib/types.js';
 
-// ─── Constantes ───────────────────────────────────────────────
+// ─── Constants ───────────────────────────────────────────────
 
 const ALLOWED_DOMAIN = 'pascualbravo.edu.co';
 
-/** Longitud mínima de contraseña */
+/** Minimum length of password */
 const MIN_PASSWORD_LENGTH = 8;
 
-// ─── Validaciones ─────────────────────────────────────────────
+// ─── Validations ─────────────────────────────────────────────
 
 function isValidInstitutionalEmail(email: string): boolean {
   const normalized = email.trim().toLowerCase();
@@ -46,7 +46,7 @@ export default function handler(
 
   const body = req.body as Partial<RegisterRequest>;
 
-  // 1. Validar campos requeridos
+  // 1. Validate required camps
   const missing = requireFields(body as RegisterRequest, [
     'email',
     'password',
@@ -66,7 +66,7 @@ export default function handler(
 
   const { email, password, displayName, profile } = body as RegisterRequest;
 
-  // 2. Validar dominio institucional
+  // 2. Validate institutional domain
   if (!isValidInstitutionalEmail(email)) {
     sendError(
       res,
@@ -77,7 +77,7 @@ export default function handler(
     return;
   }
 
-  // 3. Validar perfil
+  // 3. Validate profile
   if (!['estudiante', 'docente'].includes(profile)) {
     sendError(
       res,
@@ -88,7 +88,7 @@ export default function handler(
     return;
   }
 
-  // 4. Validar contraseña
+  // 4. Validate password
   if (!isValidPassword(password)) {
     sendError(
       res,
@@ -99,9 +99,9 @@ export default function handler(
     return;
   }
 
-  // 5. Registro (Fase 4: Firebase Auth real)
-  //    Por ahora: respuesta estructurada mock con todos los campos reales.
-  //    En Fase 4 se reemplaza este bloque por:
+  // 5. Register (Phase 4: Firebase Auth real)
+  //    For now: mock structured response with all real camps.
+  //    In phase 4 replace for:
   //    const userRecord = await admin.auth().createUser({ email, password, displayName });
   //    await db.collection('users').doc(userRecord.uid).set({ profile, createdAt });
 
@@ -115,7 +115,7 @@ export default function handler(
       displayName,
       profile,
       createdAt: new Date().toISOString(),
-      // En Fase 4: token JWT de Firebase para autenticar sesión
+      // In phase 4: token JWT of Firebase to authenticate session
       // idToken: '...',
     },
     201,

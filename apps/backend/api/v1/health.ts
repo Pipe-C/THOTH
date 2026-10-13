@@ -2,9 +2,9 @@
 // api/v1/health.ts — Endpoint 1: Health Check
 // GET /api/v1/health
 // ─────────────────────────────────────────────────────────────
-// Verifica el estado de todos los servicios externos (Supabase,
-// Gemini) y devuelve un resumen de salud del sistema.
-// No requiere autenticación.
+// Verify state of all external services (Supabase,
+// Gemini) and returns a system health report.
+// Does not require authentication.
 // ─────────────────────────────────────────────────────────────
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
@@ -23,7 +23,7 @@ export default async function handler(
   try {
     const startTime = Date.now();
 
-    // Verificar servicios en paralelo para minimizar latencia
+    // Verify services in parallel to minimize latency
     const [supabaseOk, geminiOk] = await Promise.allSettled([
       pingSupabase(),
       pingGemini(),

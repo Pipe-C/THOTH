@@ -1,14 +1,14 @@
 // ─────────────────────────────────────────────────────────────
-// api/v1/vector-search.ts — Endpoint 4: Búsqueda Vectorial RAG
+// api/v1/vector-search.ts — Endpoint 4: RAG Vectorial search
 // POST /api/v1/vector-search
 // ─────────────────────────────────────────────────────────────
-// Realiza una búsqueda semántica (similitud coseno) sobre el
-// fondo documental institucional del Pascual Bravo almacenado
-// en Supabase pgvector.
-//
-// Uso principal: consultado internamente por generate.ts, pero
-// expuesto como endpoint independiente para depuración y para
-// que el cliente mobile pueda mostrar "fuentes consultadas".
+// Makes a semantic search (cosen similarity) based on
+// documented institutional sources of Pascual Bravo stated on
+// supabase pgvector.
+// Principal use: internal consult by generate,ts, but
+// exposed as an independent endpoint for depuration and show
+// mobile client "consulted sources".
+
 // ─────────────────────────────────────────────────────────────
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
@@ -22,7 +22,7 @@ import {
 import { searchDocuments, SIMILARITY_THRESHOLD } from '../../lib/supabase.js';
 import type { VectorSearchRequest } from '../../lib/types.js';
 
-// ─── Límites ──────────────────────────────────────────────────
+// ─── Limits ──────────────────────────────────────────────────
 
 const MAX_TOP_K = 20;
 const DEFAULT_TOP_K = 5;
@@ -37,7 +37,7 @@ export default async function handler(
 
   const body = req.body as Partial<VectorSearchRequest>;
 
-  // 1. Validar campo requerido
+  // 1. Validate required camp
   const missing = requireFields(body as VectorSearchRequest, ['query']);
   if (missing.length > 0) {
     sendError(
@@ -51,7 +51,7 @@ export default async function handler(
 
   const { query, topK: rawTopK } = body as VectorSearchRequest;
 
-  // 2. Validar query no vacía
+  // 2. Validate empty query
   if (!query.trim()) {
     sendError(
       res,
@@ -62,12 +62,12 @@ export default async function handler(
     return;
   }
 
-  // 3. Validar topK
+  // 3. Validate topK
   const topK = rawTopK !== undefined
     ? Math.min(Math.max(1, rawTopK), MAX_TOP_K)
     : DEFAULT_TOP_K;
 
-  // 4. Ejecutar búsqueda vectorial
+  // 4. Execute vectorial search
   try {
     const startTime = Date.now();
     const results = await searchDocuments(query.trim(), topK);
