@@ -7,12 +7,51 @@
 // Does not require authentication.
 // ─────────────────────────────────────────────────────────────
 
+
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { sendSuccess, sendError, requireMethod, ErrorCode } from '../../lib/response.js';
+import {
+  sendSuccess,
+  sendError,
+  requireMethod,
+  ErrorCode,
+} from '../../lib/response.js';
 import { pingSupabase } from '../../lib/supabase.js';
 import { pingGemini } from '../../lib/gemini.js';
 
-// ─── Handler ──────────────────────────────────────────────────
+const TIMEOUT_MS = 8_000;
+
+async function checkService(
+  name: string,
+  ping: () => Promise<boolean>,
+): Promise<boolean> {
+  const start = Date.now();
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+
+  try {
+    const result = await Promise.race([
+      ping(),
+      new Promise<never>((_, reject) => {
+        timeout = setTimeout(
+          () => reject(new Error(`Timeout después de ${TIMEOUT_MS} ms`)),
+          TIMEOUT_MS,
+        );
+      }),
+    ]);
+
+    console.log(`[Health] ${name}: ${Date.now() - start} ms`);
+
+    return result;
+  } catch (error) {
+    console.error(
+      `[Health] ${name}: ${Date.now() - start} ms`,
+      error instanceof Error ? error.message : String(error),
+    );
+
+    return false;
+  } finally {
+    if (timeout) clearTimeout(timeout);
+  }
+}
 
 export default async function handler(
   req: VercelRequest,
@@ -20,22 +59,16 @@ export default async function handler(
 ): Promise<void> {
   if (!requireMethod(req, res, 'GET')) return;
 
-  try {
-    const startTime = Date.now();
+  const startTime = Date.now();
 
-    // Verify services in parallel to minimize latency
-    const [supabaseOk, geminiOk] = await Promise.allSettled([
-      pingSupabase(),
-      pingGemini(),
+  try {
+    const [supabase, gemini] = await Promise.all([
+      checkService('Supabase', pingSupabase),
+      checkService('Gemini', pingGemini),
     ]);
 
-    const services = {
-      supabase: supabaseOk.status === 'fulfilled' ? supabaseOk.value : false,
-      gemini: geminiOk.status === 'fulfilled' ? geminiOk.value : false,
-    };
-
+    const services = { supabase, gemini };
     const allHealthy = Object.values(services).every(Boolean);
-    const latencyMs = Date.now() - startTime;
 
     sendSuccess(
       res,
@@ -43,7 +76,7 @@ export default async function handler(
         status: allHealthy ? 'healthy' : 'degraded',
         version: 'v1',
         services,
-        latencyMs,
+        latencyMs: Date.now() - startTime,
         environment: process.env.NODE_ENV ?? 'development',
       },
       allHealthy ? 200 : 503,
