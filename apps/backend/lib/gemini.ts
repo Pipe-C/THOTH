@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────
-// lib/gemini.ts — Gemini 3.8 Flash client for THOTH
+// lib/gemini.ts — Gemini 3.5 Flash client for THOTH
 // ─────────────────────────────────────────────────────────────
 // Responsibility: construct final prompt mixing the prompt system
 // identity, anti-cliche negative prompt, user profile
@@ -11,7 +11,7 @@ import type { UserProfile, DocumentType, ContextSource } from './types.js';
 
 // ─── Configuration ────────────────────────────────────────────
 
-const MODEL_ID = 'gemini-2.0-flash';
+const MODEL_ID = 'gemini-3.5-flash';
 let _ai: GoogleGenAI | null = null;
 
 export function resetGeminiClient(): void {
