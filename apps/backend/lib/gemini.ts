@@ -11,8 +11,7 @@ import type { UserProfile, DocumentType, ContextSource } from './types.js';
 
 // ─── Configuration ────────────────────────────────────────────
 
-const MODEL_ID = 'gemini-2.0-flash';
-
+const MODEL_ID = 'gemini-3.8-flash';
 let _ai: GoogleGenAI | null = null;
 
 export function resetGeminiClient(): void {
