@@ -185,7 +185,8 @@ export async function pingGemini(): Promise<boolean> {
       contents: [{ role: 'user', parts: [{ text: 'ping' }] }],
     });
     return !!r.candidates?.[0];
-  } catch {
+  } catch (error) {
+    console.error('[Gemini] Error de conexión:', error);
     return false;
   }
 }
