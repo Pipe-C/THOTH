@@ -22,7 +22,7 @@ import {
   ErrorCode,
 } from '../../lib/response.js';
 import { searchDocuments, SIMILARITY_THRESHOLD } from '../../lib/supabase.js';
-import { generateContent } from '../../lib/gemini.js';
+import { generateContent } from '../../lib/groq.js';
 import { analyzeText, buildRegenerationPrompt } from '../../lib/antiClicheFilter.js';
 import type { GenerateRequest, ContextSource } from '../../lib/types.js';
 

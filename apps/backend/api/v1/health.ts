@@ -16,7 +16,7 @@ import {
   ErrorCode,
 } from '../../lib/response.js';
 import { pingSupabase } from '../../lib/supabase.js';
-import { pingGemini } from '../../lib/gemini.js';
+import { pingGemini } from '../../lib/groq.js';
 
 const TIMEOUT_MS = 8_000;
 
