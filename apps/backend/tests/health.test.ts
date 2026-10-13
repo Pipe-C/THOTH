@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-// Mock de servicios externos con la ruta relativa correcta desde /tests
+// Mock external services with correct relative route from /tests
 vi.mock('../lib/supabase.js', () => ({
   pingSupabase: vi.fn(),
   SIMILARITY_THRESHOLD: 0.75,

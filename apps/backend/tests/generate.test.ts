@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-// Mock de servicios externos con rutas relativas correctas
+// Mock external services with correct relative routes
 vi.mock('../lib/gemini.js', () => ({
   generateContent: vi.fn(),
 }));

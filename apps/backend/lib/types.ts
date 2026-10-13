@@ -1,11 +1,11 @@
 // ─────────────────────────────────────────────────────────────
-// lib/types.ts — Tipos compartidos del backend TOTH
+// lib/types.ts — Shared types from THOTH backend
 // ─────────────────────────────────────────────────────────────
 
-/** Perfiles de usuario soportados por TOTH */
+/** Supported user profiles in THOTH */
 export type UserProfile = 'estudiante' | 'docente';
 
-/** Tipos de entregable académico disponibles */
+/** Types of available academic releases */
 export type DocumentType =
   | 'ensayo'
   | 'informe_laboratorio'
@@ -13,77 +13,77 @@ export type DocumentType =
   | 'articulo'
   | 'resumen';
 
-/** Fuentes de contexto que puede usar el RAG */
+/** Possible context sources that the RAG can use */
 export type ContextSource = 'institutional' | 'web' | 'none';
 
-// ─── Payload de entrada para /api/v1/generate ────────────────
+// ─── Payload entry for /api/v1/generate ────────────────
 
 export interface GenerateRequest {
-  /** Mensaje o instrucción del usuario */
+  /** User message or instruction */
   prompt: string;
-  /** Perfil activo: estudiante o docente */
+  /** Active profile: Student or teacher*/
   profile: UserProfile;
-  /** Tipo de documento a generar */
+  /** Document type to generate */
   documentType: DocumentType;
-  /** ID de usuario Firebase (para trazabilidad) */
+  /** Firebase User ID (Traceability motives) */
   userId: string;
-  /** Extensión aproximada en palabras (opcional) */
+  /** Approximated extension in words (optional) */
   wordCount?: number;
-  /** Tema o asignatura (opcional, enriquece el contexto) */
+  /** Tema or topic (optional, flourish the context) */
   subject?: string;
 }
 
-// ─── Payload de entrada para /api/v1/vector-search ───────────
+// ─── Payload entry for /api/v1/vector-search ───────────
 
 export interface VectorSearchRequest {
-  /** Texto de consulta para búsqueda semántica */
+  /** Consult text for semantic search */
   query: string;
-  /** Número máximo de resultados (default: 5) */
+  /** Max number of results (default: 5) */
   topK?: number;
 }
 
-// ─── Resultado individual de búsqueda vectorial ───────────────
+// ─── Individual result individual of vectorial search ───────────────
 
 export interface VectorSearchResult {
-  /** ID del chunk en Supabase */
+  /** Chunk ID of Supabase */
   id: string;
-  /** Contenido del fragmento documental */
+  /** Content of documental fragment */
   content: string;
-  /** Metadatos del documento fuente */
+  /** Metadata of source document */
   metadata: {
     source: string;
     document_type: string;
     created_at?: string;
   };
-  /** Puntuación de similitud coseno (0–1) */
+  /** Score of cosen similarity (0–1) */
   similarity: number;
 }
 
-// ─── Payload de registro de usuario ──────────────────────────
+// ─── Payload user register ──────────────────────────
 
 export interface RegisterRequest {
   email: string;
-  /** Debe ser @pascualbravo.edu.co */
+  /** Has to be @pascualbravo.edu.co */
   password: string;
   displayName: string;
   profile: UserProfile;
 }
 
-// ─── Payload de login ─────────────────────────────────────────
+// ─── Payload login ─────────────────────────────────────────
 
 export interface LoginRequest {
   email: string;
   password: string;
 }
 
-// ─── Respuesta de generación ──────────────────────────────────
+// ─── Generation response ──────────────────────────────────
 
 export interface GenerateResponse {
-  /** Texto generado y sanitizado */
+  /** Generated text sanitized */
   text: string;
-  /** Fuentes que contribuyeron a la respuesta */
+  /** Sources that contributed to the response */
   sources_used: ContextSource[];
-  /** Metadatos de trazabilidad */
+  /** Metadata of traceability */
   metadata: {
     model: string;
     profile: UserProfile;
