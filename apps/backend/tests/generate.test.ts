@@ -1,8 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-// Mock external services with correct relative routes
-vi.mock('../lib/gemini.js', () => ({
+vi.mock('../lib/groq.js', () => ({
   generateContent: vi.fn(),
 }));
 
@@ -12,7 +11,7 @@ vi.mock('../lib/supabase.js', () => ({
 }));
 
 import generateHandler from '../api/v1/generate.js';
-import { generateContent } from '../lib/gemini.js';
+import { generateContent } from '../lib/groq.js';
 import { searchDocuments } from '../lib/supabase.js';
 import { createMockHttp } from './helpers/mockHttp.js';
 
@@ -112,8 +111,8 @@ describe('Generate Endpoint (POST /api/v1/generate)', () => {
   });
 
   describe('Manejo de errores', () => {
-    it('debe responder 502 LLM_ERROR si Gemini falla con prefijo [Gemini]', async () => {
-      vi.mocked(generateContent).mockRejectedValue(new Error('[Gemini] Quota exceeded'));
+    it('debe responder 502 LLM_ERROR si Groq falla con prefijo [Groq]', async () => {
+      vi.mocked(generateContent).mockRejectedValue(new Error('[Groq] Rate limit reached'));
 
       const { req, res, state } = createMockHttp('POST', {
         prompt: 'Prueba error',

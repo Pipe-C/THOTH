@@ -1,65 +1,67 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-const { mockGenerateContent } = vi.hoisted(() => ({
-  mockGenerateContent: vi.fn(),
+const { mockCreate } = vi.hoisted(() => ({
+  mockCreate: vi.fn(),
 }));
 
-vi.mock('@google/genai', () => ({
-  GoogleGenAI: class {
-    models = {
-      generateContent: mockGenerateContent,
+vi.mock('groq-sdk', () => ({
+  default: class {
+    chat = {
+      completions: {
+        create: mockCreate,
+      },
     };
   },
 }));
 
 import {
-  getGeminiClient,
-  resetGeminiClient,
-  pingGemini,
+  getGroqClient,
+  resetGroqClient,
+  pingGroq,
   generateContent,
   buildDocumentPrompt,
-} from '../lib/gemini.js';
+} from '../lib/groq.js';
 
-describe('Gemini Client Helper', () => {
+describe('Groq Client Helper', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    resetGeminiClient();
-    process.env.GEMINI_API_KEY = 'test-gemini-key-12345';
+    resetGroqClient();
+    process.env.GROQ_API_KEY = 'gsk_test-groq-key-12345';
   });
 
-  it('debe arrojar error si GEMINI_API_KEY no está definida', () => {
-    delete process.env.GEMINI_API_KEY;
-    expect(() => getGeminiClient()).toThrow(/GEMINI_API_KEY no está definida/);
+  it('debe arrojar error si GROQ_API_KEY no está definida', () => {
+    delete process.env.GROQ_API_KEY;
+    expect(() => getGroqClient()).toThrow(/GROQ_API_KEY no está definida/);
   });
 
-  it('debe inicializar el cliente cuando GEMINI_API_KEY está definida', () => {
-    const client = getGeminiClient();
+  it('debe inicializar el cliente cuando GROQ_API_KEY está definida', () => {
+    const client = getGroqClient();
     expect(client).toBeDefined();
   });
 
-  it('pingGemini() debe retornar true cuando la API responde con candidatos', async () => {
-    mockGenerateContent.mockResolvedValue({
-      candidates: [{ content: { parts: [{ text: 'pong' }] } }],
+  it('pingGroq() debe retornar true cuando la API responde con opciones', async () => {
+    mockCreate.mockResolvedValue({
+      choices: [{ message: { content: 'pong' } }],
     });
 
-    const alive = await pingGemini();
+    const alive = await pingGroq();
     expect(alive).toBe(true);
   });
 
-  it('pingGemini() debe retornar false cuando la llamada falla', async () => {
-    mockGenerateContent.mockRejectedValue(new Error('Quota limit reached'));
+  it('pingGroq() debe retornar false cuando la llamada falla', async () => {
+    mockCreate.mockRejectedValue(new Error('Quota limit reached'));
 
-    const alive = await pingGemini();
+    const alive = await pingGroq();
     expect(alive).toBe(false);
   });
 
   describe('generateContent()', () => {
     it('debe generar contenido e identificar las fuentes utilizadas', async () => {
-      mockGenerateContent.mockResolvedValue({
-        candidates: [
+      mockCreate.mockResolvedValue({
+        choices: [
           {
-            content: {
-              parts: [{ text: 'Texto académico generado por Gemini sin clichés.' }],
+            message: {
+              content: 'Texto académico generado por Groq sin clichés.',
             },
           },
         ],
@@ -75,14 +77,14 @@ describe('Gemini Client Helper', () => {
         subject: 'Algoritmos',
       });
 
-      expect(res.text).toBe('Texto académico generado por Gemini sin clichés.');
+      expect(res.text).toBe('Texto académico generado por Groq sin clichés.');
       expect(res.sourcesUsed).toEqual(['institutional', 'web']);
-      expect(mockGenerateContent).toHaveBeenCalledTimes(1);
+      expect(mockCreate).toHaveBeenCalledTimes(1);
     });
 
     it('debe registrar sources_used como none si no hay contextos disponibles', async () => {
-      mockGenerateContent.mockResolvedValue({
-        candidates: [{ content: { parts: [{ text: 'Respuesta sin contexto previo.' }] } }],
+      mockCreate.mockResolvedValue({
+        choices: [{ message: { content: 'Respuesta sin contexto previo.' } }],
       });
 
       const res = await generateContent({
@@ -97,8 +99,8 @@ describe('Gemini Client Helper', () => {
     });
 
     it('debe arrojar error si el modelo devuelve una respuesta vacía', async () => {
-      mockGenerateContent.mockResolvedValue({
-        candidates: [{ content: { parts: [{ text: '' }] } }],
+      mockCreate.mockResolvedValue({
+        choices: [{ message: { content: '' } }],
       });
 
       await expect(

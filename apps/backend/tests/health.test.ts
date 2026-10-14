@@ -1,19 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-// Mock external services with correct relative route from /tests
 vi.mock('../lib/supabase.js', () => ({
   pingSupabase: vi.fn(),
   SIMILARITY_THRESHOLD: 0.75,
 }));
 
-vi.mock('../lib/gemini.js', () => ({
-  pingGemini: vi.fn(),
+vi.mock('../lib/groq.js', () => ({
+  pingGroq: vi.fn(),
 }));
 
 import healthHandler from '../api/v1/health.js';
 import { pingSupabase } from '../lib/supabase.js';
-import { pingGemini } from '../lib/gemini.js';
+import { pingGroq } from '../lib/groq.js';
 import { createMockHttp } from './helpers/mockHttp.js';
 
 describe('Health Endpoint (GET /api/v1/health)', () => {
@@ -31,7 +29,7 @@ describe('Health Endpoint (GET /api/v1/health)', () => {
 
   it('debe responder 200 y status healthy cuando todos los servicios responden OK', async () => {
     vi.mocked(pingSupabase).mockResolvedValue(true);
-    vi.mocked(pingGemini).mockResolvedValue(true);
+    vi.mocked(pingGroq).mockResolvedValue(true);
 
     const { req, res, state } = createMockHttp('GET');
     await healthHandler(req, res);
@@ -40,12 +38,12 @@ describe('Health Endpoint (GET /api/v1/health)', () => {
     expect(state.body.ok).toBe(true);
     expect(state.body.data.status).toBe('healthy');
     expect(state.body.data.services.supabase).toBe(true);
-    expect(state.body.data.services.gemini).toBe(true);
+    expect(state.body.data.services.groq).toBe(true);
   });
 
   it('debe responder 503 y status degraded cuando algún servicio no está disponible', async () => {
     vi.mocked(pingSupabase).mockResolvedValue(false);
-    vi.mocked(pingGemini).mockResolvedValue(true);
+    vi.mocked(pingGroq).mockResolvedValue(true);
 
     const { req, res, state } = createMockHttp('GET');
     await healthHandler(req, res);
