@@ -1,40 +1,31 @@
-// ─────────────────────────────────────────────────────────────
-// lib/gemini.ts — Gemini 3.5 Flash client for THOTH
+﻿// ─────────────────────────────────────────────────────────────
+// lib/groq.ts — Groq (LLaMA 3.3 70B) client for THOTH
 // ─────────────────────────────────────────────────────────────
 // Responsibility: construct final prompt mixing the prompt system
 // identity, anti-cliche negative prompt, user profile
-// and hybrid RGA context; Then invoke Gemini.
+// and hybrid RAG context; Then invoke Groq.
 // ─────────────────────────────────────────────────────────────
 
-import { GoogleGenAI } from '@google/genai';
+import Groq from 'groq-sdk';
 import type { UserProfile, DocumentType, ContextSource } from './types.js';
 
-// ─── Configuration ────────────────────────────────────────────
+const MODEL_ID = 'llama-3.3-70b-versatile';
+let _groq: Groq | null = null;
 
-const MODEL_ID = 'gemini-3.7-flash';
-let _ai: GoogleGenAI | null = null;
-
-export function resetGeminiClient(): void {
-  _ai = null;
+export function resetGroqClient(): void {
+  _groq = null;
 }
 
-export function getGeminiClient(): GoogleGenAI {
-  if (!_ai) {
-    const apiKey = process.env.GEMINI_API_KEY;
+export function getGroqClient(): Groq {
+  if (!_groq) {
+    const apiKey = process.env.GROQ_API_KEY;
     if (!apiKey) {
-      throw new Error('[Gemini] GEMINI_API_KEY no está definida en .env');
+      throw new Error('[Groq] GROQ_API_KEY no está definida en .env');
     }
-    _ai = new GoogleGenAI({
-      apiKey,
-      httpOptions: {
-        timeout: 15_000,
-      },
-    });
+    _groq = new Groq({ apiKey });
   }
-  return _ai;
+  return _groq;
 }
-
-// ─── System prompts (ver COMPORTAMIENTO_DEL_ASISTENTE.md) ──
 
 const SYSTEM_PROMPT_BASE = `Eres TOTH, un asistente académico de generación de contenido para la comunidad de la I.U. Pascual Bravo. Tu nombre honra a Thot, deidad egipcia de la escritura y la sabiduría: tu tarea es producir conocimiento claro, riguroso y con voz propia — no texto reciclado.
 
@@ -78,8 +69,6 @@ PERFIL ACTIVO: DOCENTE
 - Prioriza precisión terminológica y referencias al material institucional.`,
 };
 
-// ─── Prompts templates by document type ──────────────
-
 export function buildDocumentPrompt(
   type: DocumentType,
   userPrompt: string,
@@ -105,9 +94,7 @@ export function buildDocumentPrompt(
   }
 }
 
-// ─── Principal function of generation ─────────────────────────
-
-export interface GeminiGenerateParams {
+export interface GroqGenerateParams {
   prompt: string;
   profile: UserProfile;
   documentType: DocumentType;
@@ -117,14 +104,14 @@ export interface GeminiGenerateParams {
   subject?: string;
 }
 
-export interface GeminiGenerateResult {
+export interface GroqGenerateResult {
   text: string;
   sourcesUsed: ContextSource[];
 }
 
 export async function generateContent(
-  params: GeminiGenerateParams,
-): Promise<GeminiGenerateResult> {
+  params: GroqGenerateParams,
+): Promise<GroqGenerateResult> {
   const {
     prompt,
     profile,
@@ -135,22 +122,19 @@ export async function generateContent(
     subject,
   } = params;
 
-  const ai = getGeminiClient();
+  const client = getGroqClient();
 
-  // Determine used fonts
   const sourcesUsed: ContextSource[] = [];
   if (institutionalContext.trim()) sourcesUsed.push('institutional');
   if (webContext.trim()) sourcesUsed.push('web');
   if (sourcesUsed.length === 0) sourcesUsed.push('none');
 
-  // Construct system instruction
   const systemInstruction = [
     SYSTEM_PROMPT_BASE,
     NEGATIVE_PROMPT,
     PROFILE_PROMPTS[profile],
   ].join('\n\n');
 
-  // Construct user message with RAG context
   const contextBlock = `CONTEXTO INSTITUCIONAL (Pascual Bravo — prioridad alta):
 ${institutionalContext || 'Sin contexto institucional disponible para esta consulta.'}
 
@@ -160,43 +144,40 @@ ${webContext || 'Sin contexto web disponible.'}
 INSTRUCCIÓN DE USO DE CONTEXTO:
 - Responde primero con base en el CONTEXTO INSTITUCIONAL.
 - Usa el CONTEXTO WEB únicamente para llenar vacíos o actualizar datos temporales.
-- Si ningún contexto responde la pregunta, dilo explícitamente en vez de inventar contenido.
+- Si ningún contexto responde la pregunta, dilo explicitamente en vez de inventar contenido.
 
 PETICIÓN:
 ${buildDocumentPrompt(documentType, prompt, wordCount, subject)}`;
 
-  const response = await ai.models.generateContent({
+  const response = await client.chat.completions.create({
     model: MODEL_ID,
-    config: { systemInstruction },
-    contents: [{ role: 'user', parts: [{ text: contextBlock }] }],
+    messages: [
+      { role: 'system', content: systemInstruction },
+      { role: 'user', content: contextBlock },
+    ],
+    temperature: 0.6,
   });
 
-  const text =
-    response.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+  const text = response.choices[0]?.message?.content ?? '';
 
   if (!text) {
-    throw new Error('[Gemini] La respuesta llegó vacía desde el modelo.');
+    throw new Error('[Groq] La respuesta llegó vacía desde el modelo.');
   }
 
   return { text, sourcesUsed };
 }
 
-/** Verify connectivity with Gemini (Generate minimum token). */
-export async function pingGemini(): Promise<boolean> {
+export async function pingGroq(): Promise<boolean> {
   try {
-    const ai = getGeminiClient();
-    const r = await ai.models.generateContent({
+    const client = getGroqClient();
+    const r = await client.chat.completions.create({
       model: MODEL_ID,
-      contents: [{ role: 'user', parts: [{ text: 'ping' }] }],
+      messages: [{ role: 'user', content: 'ping' }],
+      max_completion_tokens: 5,
     });
-    return !!r.candidates?.[0];
-
+    return !!r.choices[0]?.message?.content;
   } catch (error) {
-    console.error('[Gemini] Error de conexión:', error);
-    if (error instanceof Error) {
-      console.error('[Gemini] Mensaje:', error.message);
-      console.error('[Gemini] Causa:', error.cause);
-    }
+    console.error('[Groq] Error de conexión:', error);
     return false;
   }
 }

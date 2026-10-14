@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────
-// api/v1/generate.ts — Endpoint 5: RAG Orchestrator + Gemini
+// api/v1/generate.ts — Endpoint 5: RAG Orchestrator + Groq
 // POST /api/v1/generate
 // ─────────────────────────────────────────────────────────────
 // Complete flow:
@@ -7,7 +7,7 @@
 //  2. Search institutional context in Supabase (vector search).
 //  3. If similarity is low or topic requires validity,
 //     complements with web search (Tavily — complete Phase 3).
-//  4. Invoke Gemini with mixed context and prompts
+//  4. Invoke Groq with mixed context and prompts
 //     defined on COMPORTAMIENTO_DEL_ASISTENTE.md.
 //  5. Applies anti-cliche filter; regenerates if there is filler words.
 //  6. Returns sanitized response with source metadata.
@@ -22,7 +22,7 @@ import {
   ErrorCode,
 } from '../../lib/response.js';
 import { searchDocuments, SIMILARITY_THRESHOLD } from '../../lib/supabase.js';
-import { generateContent } from '../../lib/gemini.js';
+import { generateContent } from '../../lib/groq.js';
 import { analyzeText, buildRegenerationPrompt } from '../../lib/antiClicheFilter.js';
 import type { GenerateRequest, ContextSource } from '../../lib/types.js';
 
@@ -35,12 +35,9 @@ const MAX_REGENERATION_ATTEMPTS = 2;
 const DEFAULT_TOP_K = 5;
 
 // ─── Web search (Tavily) ────────────────────────────────────
-// In complete Phase 3: connect Tavily API.
-// For now, stub function returns empty string.
 async function fetchWebContext(_query: string): Promise<string> {
   const tavilyKey = process.env.TAVILY_API_KEY;
   if (!tavilyKey) {
-    // No API key: no available web context
     return '';
   }
 
@@ -243,7 +240,7 @@ async function generateWithQualityFilter(
 function handleGenerateError(res: VercelResponse, err: unknown): void {
   const message = err instanceof Error ? err.message : String(err);
 
-  if (message.includes('[Gemini]')) {
+  if (message.includes('[Groq]')) {
     sendError(
       res,
       502,
@@ -316,7 +313,7 @@ export default async function handler(
       text,
       sources_used: sourcesUsed,
       metadata: {
-        model: 'gemini-2.0-flash',
+        model: 'llama-3.3-70b-versatile',
         profile,
         documentType,
         regenerated,

@@ -3,10 +3,9 @@
 // GET /api/v1/health
 // ─────────────────────────────────────────────────────────────
 // Verify state of all external services (Supabase,
-// Gemini) and returns a system health report.
+// Groq) and returns a system health report.
 // Does not require authentication.
 // ─────────────────────────────────────────────────────────────
-
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import {
@@ -16,7 +15,7 @@ import {
   ErrorCode,
 } from '../../lib/response.js';
 import { pingSupabase } from '../../lib/supabase.js';
-import { pingGemini } from '../../lib/gemini.js';
+import { pingGroq } from '../../lib/groq.js';
 
 const TIMEOUT_MS = 8_000;
 
@@ -62,12 +61,12 @@ export default async function handler(
   const startTime = Date.now();
 
   try {
-    const [supabase, gemini] = await Promise.all([
+    const [supabase, groq] = await Promise.all([
       checkService('Supabase', pingSupabase),
-      checkService('Gemini', pingGemini),
+      checkService('Groq', pingGroq),
     ]);
 
-    const services = { supabase, gemini };
+    const services = { supabase, groq };
     const allHealthy = Object.values(services).every(Boolean);
 
     sendSuccess(
