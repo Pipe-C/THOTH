@@ -9,7 +9,7 @@
 import Groq from 'groq-sdk';
 import type { UserProfile, DocumentType, ContextSource } from './types.js';
 
-const MODEL_ID = 'llama-3.1-8b-instant';
+const MODEL_ID = 'openai/gpt-oss-120b';
 let _groq: Groq | null = null;
 
 export function resetGroqClient(): void {
