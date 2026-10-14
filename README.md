@@ -38,7 +38,7 @@ capas de diseño sobre el LLM:
 | 0 | Scaffold del monorepo | ✅ Completa |
 | 1 | Identidad visual y componentes base | ✅ Completa |
 | 2 | Pantallas de flujo principal (mock data) | ✅ Completa |
-| 3 | Backend: Vercel + Gemini + Supabase RAG | 🔜 En progreso |
+| 3 | Backend: Vercel + Groq + Supabase RAG | ✅ Completa |
 | 4 | Integración real frontend-backend + puente Kotlin | ⏳ Pendiente |
 | 5 | Integración y validación final | ⏳ Pendiente |
 
@@ -76,9 +76,9 @@ reducir la fatiga de lectura en sesiones largas de estudio.
 | Módulos nativos | Kotlin (Room DB local, exportación PDF/Word) |
 | Autenticación y BD en la nube | Firebase Auth + Cloud Firestore |
 | Orquestador backend | Vercel Serverless Functions (Node.js/TypeScript) |
-| LLM | Google Gen AI SDK — Gemini 3.8 Flash (`gemini-3.8-flash`) |
+| LLM | Groq SDK — OpenAI GPT-OSS 120B (`openai/gpt-oss-120b`) |
 | Vector DB (RAG institucional) | Supabase (pgvector) |
-| Búsqueda web (grounding) | Google Search Grounding / Tavily |
+| Búsqueda web (grounding) | Tavily |
 
 ---
 
@@ -97,9 +97,21 @@ THOTH/
 │   │       ├── theme/          # Tokens de identidad visual (tokens.ts)
 │   │       ├── services/       # Datos mock (clientes Firebase/API reales en Fase 4)
 │   │       └── types/          # Interfaces compartidas (User, ChatMessage...)
-│   └── backend/                # Orquestador serverless en Vercel (Fase 3 en curso)
-│       ├── api/                # generate, vector-search, auth (a implementar)
-│       └── lib/                # Gemini, Supabase, filtro anti-cliché (a implementar)
+│   └── backend/                # Orquestador serverless en Vercel
+│       ├── api/v1/             # Rutas (entradas serverless: health, auth, vector-search, generate)
+│       ├── lib/
+│       │   ├── controllers/    # Traducen HTTP ↔ servicios
+│       │   ├── services/       # Lógica de negocio (RAG, generación, auth, health)
+│       │   ├── repositories/   # Acceso a datos (Supabase, Groq, usuarios)
+│       │   ├── routes/         # Fábrica de rutas y registro de endpoints
+│       │   ├── groq.ts         # Cliente Groq + prompts del asistente
+│       │   ├── supabase.ts     # Cliente pgvector + búsqueda vectorial
+│       │   ├── antiClicheFilter.ts
+│       │   ├── response.ts     # Respuestas/errores estandarizados
+│       │   ├── config.ts       # Constantes compartidas
+│       │   └── types.ts
+│       ├── supabase/           # Migración pgvector + Edge Function `embed`
+│       └── scripts/            # Utilidades (seed de documentos de prueba)
 └── docs/
     └── prompt-templates/       # Plantillas de prompt por tipo de entregable académico
 ```
@@ -144,11 +156,36 @@ Para `npm run android` necesitas un dispositivo virtual ya creado:
 Crea un archivo `.env` dentro de `apps/backend` (nunca lo subas al repo) con:
 
 ```env
-GEMINI_API_KEY=
+GROQ_API_KEY=
 SUPABASE_URL=
 SUPABASE_SERVICE_ROLE_KEY=
 TAVILY_API_KEY=
 ```
+
+> En Vercel estas variables se configuran como *Environment Variables* del proyecto
+> (`thoth-backend`). El archivo de referencia es `apps/backend/.env.example`.
+
+### Base de datos vectorial (Supabase)
+
+El fondo documental institucional vive en Supabase (pgvector). Para prepararlo:
+
+1. **Aplicar el esquema.** Ejecuta `apps/backend/supabase/migrations/0001_init_vector_store.sql`
+   en el SQL Editor del proyecto de Supabase. Crea la extensión `vector`, la tabla
+   `document_chunks` (embeddings de 384 dimensiones, modelo `gte-small`) y la función
+   RPC `match_document_chunks` que consume el backend.
+2. **Desplegar la Edge Function de embeddings.**
+   ```bash
+   supabase functions deploy embed --project-ref <TU_PROJECT_REF>
+   ```
+3. **Cargar documentos de prueba.** Desde `apps/backend`, con `SUPABASE_URL` y
+   `SUPABASE_SERVICE_ROLE_KEY` en el `.env`:
+   ```bash
+   npm run seed
+   ```
+
+Con esto, `POST /api/v1/vector-search` y `POST /api/v1/generate` ya devuelven contexto
+institucional real. Los endpoints desplegados están en
+`https://thoth-backend.vercel.app/api/v1/...`.
 
 ### Correr la aplicación móvil
 
@@ -173,7 +210,7 @@ npm run android
 ## Flujo de datos (RAG híbrido)
 
 ```
-Cliente móvil → Vercel (/api/generate)
+Cliente móvil → Vercel (/api/v1/generate)
                     │
       ┌─────────────┴─────────────┐
       ▼                           ▼
@@ -182,15 +219,33 @@ Vector Search               Web Search Grounding
 fondo Pascual Bravo)          institucional es baja)
       └─────────────┬─────────────┘
                      ▼
-        Contexto combinado → Gemini 3.8 Flash
+        Contexto combinado → Groq (openai/gpt-oss-120b)
                      ▼
-          Filtro anti-cliché (post-procesado)
+           Filtro anti-cliché (post-procesado)
                      ▼
-           Respuesta sanitizada al móvil
+            Respuesta sanitizada al móvil
 ```
 
 El contexto institucional siempre tiene prioridad; la web solo complementa cuando hay
 vacíos de información o el tema requiere datos vigentes.
+
+---
+
+## API del backend (v1)
+
+El backend sigue una arquitectura por capas: **ruta → controlador → servicio →
+repositorio**, con `lib/response.ts` como formato de respuesta único.
+
+| Método | Ruta | Controlador | Descripción |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/v1/health` | `healthController` | Estado de Supabase y Groq |
+| `POST` | `/api/v1/auth/register` | `authController` | Registro institucional (`@pascualbravo.edu.co`) |
+| `POST` | `/api/v1/auth/login` | `authController` | Inicio de sesión institucional |
+| `POST` | `/api/v1/vector-search` | `vectorSearchController` | Búsqueda semántica institucional |
+| `POST` | `/api/v1/generate` | `generateController` | Orquestador RAG híbrido + generación |
+
+El mapa de rutas es `lib/routes/apiRoutes.ts`; Vercel enruta por archivo según
+`apps/backend/vercel.json`.
 
 ---
 

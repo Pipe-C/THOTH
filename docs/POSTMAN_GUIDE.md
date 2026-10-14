@@ -81,7 +81,7 @@ Todos los endpoints devuelven JSON con la misma forma canonica.
 | FORBIDDEN           | 403  | El usuario no tiene permiso                 |
 | METHOD_NOT_ALLOWED  | 405  | Verbo HTTP incorrecto para la ruta          |
 | RATE_LIMIT_EXCEEDED | 429  | Demasiadas solicitudes en poco tiempo       |
-| LLM_ERROR           | 502  | Error de comunicacion con Gemini            |
+| LLM_ERROR           | 502  | Error de comunicacion con Groq              |
 | DB_ERROR            | 502  | Error de comunicacion con Supabase          |
 | INTERNAL_ERROR      | 500  | Error inesperado del servidor               |
 
@@ -146,7 +146,7 @@ Respuesta esperada - 200 OK (servicios sanos):
         "version": "v1",
         "services": {
           "supabase": true,
-          "gemini": true
+          "groq": true
         },
         "latencyMs": 342,
         "environment": "development"
@@ -166,7 +166,7 @@ Respuesta esperada - 503 Service Unavailable (algun servicio caido):
         "status": "degraded",
         "services": {
           "supabase": false,
-          "gemini": true
+          "groq": true
         },
         "latencyMs": 5001
       }
@@ -358,7 +358,7 @@ Errores esperados:
 
 Carpeta: RAG
 Proposito: orquestador principal. Ejecuta el flujo RAG hibrido completo:
-busqueda vectorial > contexto web > Gemini > filtro anti-cliche > respuesta final.
+busqueda vectorial > contexto web > Groq > filtro anti-cliche > respuesta final.
 
 Configuracion en Postman:
 
@@ -422,7 +422,7 @@ Respuesta exitosa - 200 OK:
         "text": "La recursividad es una tecnica en la que una funcion se llama a si misma...",
         "sources_used": ["institutional", "web"],
         "metadata": {
-          "model": "gemini-2.0-flash",
+          "model": "openai/gpt-oss-120b",
           "profile": "estudiante",
           "documentType": "ensayo",
           "regenerated": false,
@@ -439,7 +439,7 @@ Valores posibles de sources_used:
 | ["institutional"]          | Solo contexto del Pascual Bravo (ideal)            |
 | ["web"]                    | Solo contexto web (sin cobertura institucional)    |
 | ["institutional", "web"]   | Contexto combinado                                 |
-| ["none"]                   | Sin contexto; Gemini uso conocimiento general      |
+| ["none"]                   | Sin contexto; Groq uso conocimiento general        |
 
 regenerated: true indica que el filtro anti-cliche detecto muletillas y el
 texto fue regenerado automaticamente (maximo 2 intentos).
@@ -451,7 +451,7 @@ Errores esperados:
 | Falta prompt            | MISSING_FIELDS   | 400  |
 | profile invalido        | VALIDATION_ERROR | 400  |
 | documentType invalido   | VALIDATION_ERROR | 400  |
-| Error de Gemini         | LLM_ERROR        | 502  |
+| Error de Groq           | LLM_ERROR        | 502  |
 | Error de Supabase       | DB_ERROR         | 502  |
 
 ---
@@ -532,7 +532,7 @@ Luego en los headers de /generate y /vector-search:
 | 2  | POST   | /api/v1/auth/register    | Registro de usuario institucional    |
 | 3  | POST   | /api/v1/auth/login       | Login con email y contrasena         |
 | 4  | POST   | /api/v1/vector-search    | Busqueda semantica en RAG            |
-| 5  | POST   | /api/v1/generate         | Generacion RAG hibrido + Gemini      |
+| 5  | POST   | /api/v1/generate         | Generacion RAG hibrido + Groq        |
 
 Base URL local:   http://localhost:3000
 Prefijo version:  /api/v1/
