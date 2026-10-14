@@ -2,91 +2,10 @@
 // api/v1/health.ts — Endpoint 1: Health Check
 // GET /api/v1/health
 // ─────────────────────────────────────────────────────────────
-// Verify state of all external services (Supabase,
-// Groq) and returns a system health report.
-// Does not require authentication.
+// Ruta delgada: delega en el controlador de salud.
 // ─────────────────────────────────────────────────────────────
 
-import type { VercelRequest, VercelResponse } from '@vercel/node';
-import {
-  sendSuccess,
-  sendError,
-  requireMethod,
-  ErrorCode,
-} from '../../lib/response.js';
-import { pingSupabase } from '../../lib/supabase.js';
-import { pingGroq } from '../../lib/groq.js';
+import { defineRoute } from '../../lib/routes/defineRoute.js';
+import { handleHealth } from '../../lib/controllers/healthController.js';
 
-const TIMEOUT_MS = 8_000;
-
-async function checkService(
-  name: string,
-  ping: () => Promise<boolean>,
-): Promise<boolean> {
-  const start = Date.now();
-  let timeout: ReturnType<typeof setTimeout> | undefined;
-
-  try {
-    const result = await Promise.race([
-      ping(),
-      new Promise<never>((_, reject) => {
-        timeout = setTimeout(
-          () => reject(new Error(`Timeout después de ${TIMEOUT_MS} ms`)),
-          TIMEOUT_MS,
-        );
-      }),
-    ]);
-
-    console.log(`[Health] ${name}: ${Date.now() - start} ms`);
-
-    return result;
-  } catch (error) {
-    console.error(
-      `[Health] ${name}: ${Date.now() - start} ms`,
-      error instanceof Error ? error.message : String(error),
-    );
-
-    return false;
-  } finally {
-    if (timeout) clearTimeout(timeout);
-  }
-}
-
-export default async function handler(
-  req: VercelRequest,
-  res: VercelResponse,
-): Promise<void> {
-  if (!requireMethod(req, res, 'GET')) return;
-
-  const startTime = Date.now();
-
-  try {
-    const [supabase, groq] = await Promise.all([
-      checkService('Supabase', pingSupabase),
-      checkService('Groq', pingGroq),
-    ]);
-
-    const services = { supabase, groq };
-    const allHealthy = Object.values(services).every(Boolean);
-
-    sendSuccess(
-      res,
-      {
-        status: allHealthy ? 'healthy' : 'degraded',
-        version: 'v1',
-        services,
-        latencyMs: Date.now() - startTime,
-        environment: process.env.NODE_ENV ?? 'development',
-      },
-      allHealthy ? 200 : 503,
-    );
-  } catch (err) {
-    sendError(
-      res,
-      500,
-      ErrorCode.INTERNAL_ERROR,
-      'Error al verificar el estado del sistema.',
-      err instanceof Error ? err.message : String(err),
-    );
-  }
-}
+export default defineRoute('GET', handleHealth);
