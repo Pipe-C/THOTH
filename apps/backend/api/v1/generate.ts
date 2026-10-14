@@ -313,7 +313,7 @@ export default async function handler(
       text,
       sources_used: sourcesUsed,
       metadata: {
-        model: 'llama-3.3-70b-versatile',
+        model: 'openai/gpt-oss-120b',
         profile,
         documentType,
         regenerated,
