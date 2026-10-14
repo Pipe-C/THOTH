@@ -110,9 +110,11 @@ THOTH/
 │       │   ├── response.ts     # Respuestas/errores estandarizados
 │       │   ├── config.ts       # Constantes compartidas
 │       │   └── types.ts
-│       ├── supabase/           # Migración pgvector + Edge Function `embed`
-│       └── scripts/            # Utilidades (seed de documentos de prueba)
+│       ├── supabase/           # Migraciones pgvector + Edge Function `embed`
+│       ├── documents/          # Documentos fuente a ingerir (no versionados en git)
+│       └── scripts/            # Utilidades: seed de prueba e ingesta de documentos reales
 └── docs/
+    ├── GUIA_CARGA_DOCUMENTOS.md # Carga del fondo documental institucional al RAG
     └── prompt-templates/       # Plantillas de prompt por tipo de entregable académico
 ```
 
@@ -169,23 +171,32 @@ TAVILY_API_KEY=
 
 El fondo documental institucional vive en Supabase (pgvector). Para prepararlo:
 
-1. **Aplicar el esquema.** Ejecuta `apps/backend/supabase/migrations/0001_init_vector_store.sql`
-   en el SQL Editor del proyecto de Supabase. Crea la extensión `vector`, la tabla
-   `document_chunks` (embeddings de 384 dimensiones, modelo `gte-small`) y la función
-   RPC `match_document_chunks` que consume el backend.
+1. **Aplicar el esquema.** Ejecuta las migraciones en el SQL Editor del proyecto
+   de Supabase, en orden:
+   - `apps/backend/supabase/migrations/0001_init_vector_store.sql` — crea la
+     extensión `vector`, la tabla `document_chunks` (embeddings de 384
+     dimensiones, modelo `gte-small`) y la función RPC `match_document_chunks`.
+   - `apps/backend/supabase/migrations/0002_fix_vector_index.sql` — reemplaza el
+     índice `ivfflat` por **HNSW**, necesario para una recuperación fiable con
+     pocos documentos.
 2. **Desplegar la Edge Function de embeddings.**
    ```bash
    supabase functions deploy embed --project-ref <TU_PROJECT_REF>
    ```
-3. **Cargar documentos de prueba.** Desde `apps/backend`, con `SUPABASE_URL` y
+3. **Cargar documentos.** Coloca tus documentos (PDF/DOCX/MD/TXT) en
+   `apps/backend/documents/` y, desde `apps/backend`, con `SUPABASE_URL` y
    `SUPABASE_SERVICE_ROLE_KEY` en el `.env`:
    ```bash
-   npm run seed
+   npm run ingest          # carga el fondo documental real
+   npm run seed            # (opcional) carga 3 documentos de prueba
    ```
 
-Con esto, `POST /api/v1/vector-search` y `POST /api/v1/generate` ya devuelven contexto
-institucional real. Los endpoints desplegados están en
+Con esto, `POST /api/v1/vector-search` y `POST /api/v1/generate` ya devuelven
+contexto institucional real. Los endpoints desplegados están en
 `https://thoth-backend.vercel.app/api/v1/...`.
+
+> El detalle del pipeline de ingesta (formatos, metadatos, fragmentación,
+> resolución de problemas) está en `docs/GUIA_CARGA_DOCUMENTOS.md`.
 
 ### Correr la aplicación móvil
 
