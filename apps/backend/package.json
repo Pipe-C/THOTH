@@ -8,7 +8,8 @@
     "build": "tsc",
     "lint": "tsc --noEmit",
     "test": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "seed": "node scripts/seed.mjs"
   },
   "dependencies": {
     "@google/genai": "^0.2.0",
