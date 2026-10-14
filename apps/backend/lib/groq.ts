@@ -1,5 +1,5 @@
-﻿// ─────────────────────────────────────────────────────────────
-// lib/groq.ts — Groq (LLaMA 3.3 70B) client for THOTH
+// ─────────────────────────────────────────────────────────────
+// lib/groq.ts — Groq (LLaMA 3.1 8B) client for THOTH
 // ─────────────────────────────────────────────────────────────
 // Responsibility: construct final prompt mixing the prompt system
 // identity, anti-cliche negative prompt, user profile
@@ -9,7 +9,7 @@
 import Groq from 'groq-sdk';
 import type { UserProfile, DocumentType, ContextSource } from './types.js';
 
-const MODEL_ID = 'llama-3.3-70b-versatile';
+const MODEL_ID = 'llama-3.1-8b-instant';
 let _groq: Groq | null = null;
 
 export function resetGroqClient(): void {
@@ -144,7 +144,7 @@ ${webContext || 'Sin contexto web disponible.'}
 INSTRUCCIÓN DE USO DE CONTEXTO:
 - Responde primero con base en el CONTEXTO INSTITUCIONAL.
 - Usa el CONTEXTO WEB únicamente para llenar vacíos o actualizar datos temporales.
-- Si ningún contexto responde la pregunta, dilo explicitamente en vez de inventar contenido.
+- Si ningún contexto responde la pregunta, dilo explícitamente en vez de inventar contenido.
 
 PETICIÓN:
 ${buildDocumentPrompt(documentType, prompt, wordCount, subject)}`;
