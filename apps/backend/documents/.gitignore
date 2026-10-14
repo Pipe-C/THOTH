@@ -1,0 +1,5 @@
+# Ignora el contenido documental: son archivos institucionales, no código.
+# Solo se versionan el README y este .gitignore.
+*
+!.gitignore
+!README.md
