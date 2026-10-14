@@ -1,5 +1,6 @@
 // ─────────────────────────────────────────────────────────────
-// lib/groq.ts — Groq (LLaMA 3.1 8B) client for THOTH
+// lib/groq.ts — Groq client for THOTH
+// Uses openai/gpt-oss-120b via groq-sdk
 // ─────────────────────────────────────────────────────────────
 // Responsibility: construct final prompt mixing the prompt system
 // identity, anti-cliche negative prompt, user profile
@@ -8,8 +9,9 @@
 
 import Groq from 'groq-sdk';
 import type { UserProfile, DocumentType, ContextSource } from './types.js';
+import { LLM_MODEL_ID } from './config.js';
 
-const MODEL_ID = 'openai/gpt-oss-120b';
+const MODEL_ID = LLM_MODEL_ID;
 let _groq: Groq | null = null;
 
 export function resetGroqClient(): void {
