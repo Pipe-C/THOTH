@@ -56,7 +56,7 @@ export const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
     setInputText('');
     setIsGenerating(true);
 
-    // Simulación del motor RAG + Gemini 3.8 Flash (Fase 2 mock)
+    // Simulación del motor RAG + Groq (Fase 2 mock)
     setTimeout(() => {
       let mockAssistantResponse = '';
       if (activeRole === 'docente') {
@@ -107,7 +107,7 @@ export const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
                 {docTitle}
               </Text>
               <MicroCopy style={styles.headerSub}>
-                Modo: {activeRole === 'estudiante' ? 'Estudiante' : 'Docente'} • Gemini 3.8 Flash
+                Modo: {activeRole === 'estudiante' ? 'Estudiante' : 'Docente'} • Groq GPT-OSS 120B
               </MicroCopy>
             </View>
 
