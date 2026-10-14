@@ -172,12 +172,16 @@ ${buildDocumentPrompt(documentType, prompt, wordCount, subject)}`;
 export async function pingGroq(): Promise<boolean> {
   try {
     const client = getGroqClient();
-    const r = await client.chat.completions.create({
+    // gpt-oss-120b es un modelo de razonamiento: los tokens de razonamiento cuentan
+    // dentro de max_completion_tokens, así que un límite muy bajo deja content vacío.
+    // Con reasoning_effort 'low' y un límite holgado, basta con que la llamada resuelva.
+    await client.chat.completions.create({
       model: MODEL_ID,
       messages: [{ role: 'user', content: 'ping' }],
-      max_completion_tokens: 5,
+      max_completion_tokens: 64,
+      reasoning_effort: 'low',
     });
-    return !!r.choices[0]?.message?.content;
+    return true;
   } catch (error) {
     console.error('[Groq] Error de conexión:', error);
     return false;
