@@ -106,9 +106,12 @@ Crea un Environment en Postman para no repetir la URL base en cada request.
 5. En la esquina superior derecha de Postman, selecciona TOTH Local como
    environment activo.
 
-Para produccion: crea un segundo Environment TOTH Production con
-base_url = https://tu-dominio.vercel.app y alterna entre ambos sin tocar
-los requests individuales.
+Para produccion: importa el environment ya incluido en este repo,
+`docs/TOTH_Production.postman_environment.json` (base_url =
+https://thoth-backend.vercel.app), y alterna entre TOTH Local y TOTH
+Production sin tocar los requests individuales. La coleccion incluida
+`docs/TOTH_API_v1.postman_collection.json` ya trae ese base_url embebido
+como variable, asi que tambien funciona sin importar el environment.
 
 ---
 
@@ -497,30 +500,49 @@ Esperado: 400 VALIDATION_ERROR indicando los valores validos.
 
 ## 6. Importar la coleccion
 
-### Opcion A: Crear manualmente
+El repo ya incluye una coleccion lista para importar:
+
+    docs/TOTH_API_v1.postman_collection.json        # coleccion completa
+    docs/TOTH_Production.postman_environment.json   # environment de produccion
+
+### Opcion A (recomendada): Importar los archivos incluidos
+
+1. En Postman: Import > Upload Files.
+2. Selecciona `docs/TOTH_API_v1.postman_collection.json`
+   (y, opcionalmente, `docs/TOTH_Production.postman_environment.json`).
+3. La coleccion ya trae `base_url = https://thoth-backend.vercel.app`
+   como variable propia, asi que funciona sin configuracion adicional.
+   Si importaste el environment, seleccionalo en la esquina superior derecha.
+4. Ejecuta los requests en orden: Health > Auth > RAG.
+
+Contenido de la coleccion importada:
+
+| Carpeta | Requests |
+|:--------|:---------|
+| Health  | GET /health |
+| Auth    | POST /auth/register, POST /auth/login |
+| RAG     | POST /vector-search, POST /generate (estudiante), POST /generate (docente), POST /generate (documentType invalido) |
+
+Cada request incluye:
+- un script de Tests con aserciones basicas (status y `ok`), verifiable con
+  el Collection Runner;
+- ejemplos de respuesta guardados (casos 200 y errores 400) que coinciden con
+  la respuesta real de produccion.
+
+El request POST /auth/login guarda el `idToken` en la variable de coleccion
+`auth_token` automaticamente; los requests de RAG ya incluyen el header
+`Authorization: Bearer {{auth_token}}` (deshabilitado por defecto, ya que los
+endpoints aun no exigen autenticacion).
+
+### Opcion B: Crear manualmente
 
 Sigue los pasos de la seccion 4 uno por uno en Postman.
 
-### Opcion B: Exportar e importar como JSON
+### Opcion C: Exportar tu propia coleccion
 
-1. En la coleccion TOTH API v1, haz clic en los tres puntos (...).
+1. En tu coleccion, haz clic en los tres puntos (...).
 2. Selecciona Export > Collection v2.1 > Export.
-3. Guarda el archivo como docs/TOTH_API_v1.postman_collection.json.
-4. Para importarla: Import > Upload Files > seleccionar el JSON.
-
-### Opcion C: Script automatico para capturar el token
-
-En el tab Tests del request POST /auth/login:
-
-    const response = pm.response.json();
-    if (response.ok && response.data.idToken) {
-      pm.environment.set("auth_token", response.data.idToken);
-      console.log("Token guardado:", response.data.idToken);
-    }
-
-Luego en los headers de /generate y /vector-search:
-
-    Authorization: Bearer {{auth_token}}
+3. Guarda el archivo dentro de `docs/`.
 
 ---
 

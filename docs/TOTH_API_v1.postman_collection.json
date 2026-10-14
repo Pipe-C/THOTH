@@ -1,0 +1,416 @@
+{
+  "info": {
+    "_postman_id": "b7d1e2c3-4a5f-4e6a-9c1d-0a1b2c3d4e5f",
+    "name": "TOTH API v1",
+    "description": "Backend de TOTH (I.U. Pascual Bravo). Coleccion lista para importar con el base_url de produccion ya configurado.\n\nFlujo recomendado:\n1) Health para confirmar servicios.\n2) Auth > Login (guarda auth_token automaticamente).\n3) RAG > Vector search y Generate.\n\nEndpoints de auth son MOCK (Fase 2); los endpoints RAG son reales (Supabase + Groq + Tavily).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "https://thoth-backend.vercel.app",
+      "type": "string"
+    },
+    {
+      "key": "api_version",
+      "value": "v1",
+      "type": "string"
+    },
+    {
+      "key": "auth_token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "description": "Verificacion de disponibilidad del sistema.",
+      "item": [
+        {
+          "name": "GET /health",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', function () { pm.response.to.have.status(200); });",
+                  "const body = pm.response.json();",
+                  "pm.test('ok es true', function () { pm.expect(body.ok).to.eql(true); });",
+                  "pm.test('servicios reportados', function () { pm.expect(body.data.services).to.be.an('object'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/{{api_version}}/health",
+            "description": "Devuelve el estado de Supabase y Groq. status: healthy | degraded."
+          },
+          "response": [
+            {
+              "name": "200 - healthy",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{base_url}}/api/{{api_version}}/health"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "cookie": [],
+              "body": "{\n  \"ok\": true,\n  \"version\": \"v1\",\n  \"data\": {\n    \"status\": \"healthy\",\n    \"version\": \"v1\",\n    \"services\": { \"supabase\": true, \"groq\": true },\n    \"latencyMs\": 433,\n    \"environment\": \"production\"\n  },\n  \"meta\": {\n    \"requestId\": \"toth-1792010562996-d647dbe9\",\n    \"timestamp\": \"2026-10-14T20:42:42.996Z\"\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "description": "Registro y login. MOCK en Fase 2: no persisten ni validan credenciales reales.",
+      "item": [
+        {
+          "name": "POST /auth/register",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', function () { pm.response.to.have.status(201); });",
+                  "const body = pm.response.json();",
+                  "pm.test('ok es true', function () { pm.expect(body.ok).to.eql(true); });",
+                  "pm.test('devuelve uid', function () { pm.expect(body.data.uid).to.be.a('string'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"colega.prueba@pascualbravo.edu.co\",\n  \"password\": \"MiPassword123\",\n  \"displayName\": \"Colega Prueba\",\n  \"profile\": \"estudiante\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{base_url}}/api/{{api_version}}/auth/register",
+            "description": "Registra un usuario con email institucional (@pascualbravo.edu.co). password >= 8 caracteres. profile: estudiante | docente."
+          },
+          "response": [
+            {
+              "name": "201 - creado",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"colega.prueba@pascualbravo.edu.co\",\n  \"password\": \"MiPassword123\",\n  \"displayName\": \"Colega Prueba\",\n  \"profile\": \"estudiante\"\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": "{{base_url}}/api/{{api_version}}/auth/register"
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "cookie": [],
+              "body": "{\n  \"ok\": true,\n  \"version\": \"v1\",\n  \"data\": {\n    \"uid\": \"mock_1792010574367\",\n    \"email\": \"colega.prueba@pascualbravo.edu.co\",\n    \"displayName\": \"Colega Prueba\",\n    \"profile\": \"estudiante\",\n    \"createdAt\": \"2026-10-14T20:42:54.367Z\"\n  },\n  \"meta\": {\n    \"requestId\": \"toth-1792010574369-cad778ea\",\n    \"timestamp\": \"2026-10-14T20:42:54.369Z\"\n  }\n}"
+            },
+            {
+              "name": "400 - INVALID_DOMAIN",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"usuario@gmail.com\",\n  \"password\": \"MiPassword123\",\n  \"displayName\": \"Usuario Externo\",\n  \"profile\": \"estudiante\"\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": "{{base_url}}/api/{{api_version}}/auth/register"
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "cookie": [],
+              "body": "{\n  \"ok\": false,\n  \"version\": \"v1\",\n  \"error\": {\n    \"code\": \"INVALID_DOMAIN\",\n    \"message\": \"El correo debe pertenecer al dominio @pascualbravo.edu.co\"\n  },\n  \"meta\": {\n    \"requestId\": \"toth-1792010570000-aa11bb22\",\n    \"timestamp\": \"2026-10-14T20:42:50.000Z\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "POST /auth/login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', function () { pm.response.to.have.status(200); });",
+                  "const body = pm.response.json();",
+                  "pm.test('ok es true', function () { pm.expect(body.ok).to.eql(true); });",
+                  "if (body.ok && body.data && body.data.idToken) {",
+                  "  pm.collectionVariables.set('auth_token', body.data.idToken);",
+                  "  console.log('auth_token guardado');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"colega.prueba@pascualbravo.edu.co\",\n  \"password\": \"MiPassword123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{base_url}}/api/{{api_version}}/auth/login",
+            "description": "Inicia sesion. MOCK: devuelve un idToken placeholder y lo guarda en la variable de coleccion auth_token."
+          },
+          "response": [
+            {
+              "name": "200 - login ok",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"colega.prueba@pascualbravo.edu.co\",\n  \"password\": \"MiPassword123\"\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": "{{base_url}}/api/{{api_version}}/auth/login"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "cookie": [],
+              "body": "{\n  \"ok\": true,\n  \"version\": \"v1\",\n  \"data\": {\n    \"uid\": \"mock_colega.prueba\",\n    \"email\": \"colega.prueba@pascualbravo.edu.co\",\n    \"idToken\": \"MOCK_ID_TOKEN_REPLACE_IN_PHASE_4\",\n    \"expiresIn\": 3600,\n    \"profile\": \"estudiante\"\n  },\n  \"meta\": {\n    \"requestId\": \"toth-1792010574620-e742f3a9\",\n    \"timestamp\": \"2026-10-14T20:42:54.620Z\"\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "RAG",
+      "description": "Busqueda vectorial y generacion RAG hibrido (institucional + web). Endpoints reales.",
+      "item": [
+        {
+          "name": "POST /vector-search",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', function () { pm.response.to.have.status(200); });",
+                  "const body = pm.response.json();",
+                  "pm.test('ok es true', function () { pm.expect(body.ok).to.eql(true); });",
+                  "pm.test('results es arreglo', function () { pm.expect(body.data.results).to.be.an('array'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"polimorfismo en POO\",\n  \"topK\": 3\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{base_url}}/api/{{api_version}}/vector-search",
+            "description": "Busca fragmentos por similitud semantica (coseno). query requerido; topK opcional (1-20, default 5)."
+          },
+          "response": [
+            {
+              "name": "200 - resultados",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"query\": \"polimorfismo en POO\",\n  \"topK\": 2\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": "{{base_url}}/api/{{api_version}}/vector-search"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "cookie": [],
+              "body": "{\n  \"ok\": true,\n  \"version\": \"v1\",\n  \"data\": {\n    \"results\": [\n      {\n        \"id\": \"0cf6e90b-9caf-4731-bda6-94958a526815\",\n        \"content\": \"El syllabus de Programacion Orientada a Objetos cubre encapsulacion, herencia, polimorfismo y principios SOLID durante el cuarto semestre.\",\n        \"metadata\": {\n          \"source\": \"Syllabus POO - Semestre 4\",\n          \"document_type\": \"syllabus\",\n          \"created_at\": \"2026-10-14T20:14:37.146Z\"\n        },\n        \"similarity\": 0.826737130485092\n      },\n      {\n        \"id\": \"91b18491-9acc-44b2-9805-c49ded229f64\",\n        \"content\": \"El reglamento estudiantil establece que la asistencia minima a clases es del 80% para no perder el derecho a la evaluacion final.\",\n        \"metadata\": {\n          \"source\": \"Reglamento Estudiantil Art. 45\",\n          \"document_type\": \"reglamento\",\n          \"created_at\": \"2026-10-14T20:14:36.439Z\"\n        },\n        \"similarity\": 0.806971799911751\n      }\n    ],\n    \"meta\": {\n      \"query\": \"polimorfismo en POO\",\n      \"topK\": 2,\n      \"totalFound\": 2,\n      \"similarityThreshold\": 0.75,\n      \"latencyMs\": 968\n    }\n  },\n  \"meta\": {\n    \"requestId\": \"toth-1792010777766-453e6b64\",\n    \"timestamp\": \"2026-10-14T20:46:17.766Z\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "POST /generate (estudiante)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', function () { pm.response.to.have.status(200); });",
+                  "const body = pm.response.json();",
+                  "pm.test('ok es true', function () { pm.expect(body.ok).to.eql(true); });",
+                  "pm.test('texto no vacio', function () { pm.expect(body.data.text).to.be.a('string').and.not.empty; });",
+                  "pm.test('sources_used presente', function () { pm.expect(body.data.sources_used).to.be.an('array'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{auth_token}}", "disabled": true }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"prompt\": \"Explica la recursividad en una frase\",\n  \"profile\": \"estudiante\",\n  \"documentType\": \"ensayo\",\n  \"userId\": \"colega_user_123\",\n  \"wordCount\": 300\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{base_url}}/api/{{api_version}}/generate",
+            "description": "Orquestador RAG hibrido. Requeridos: prompt, profile (estudiante|docente), documentType, userId. documentType: ensayo | informe_laboratorio | guia_clase | articulo | resumen."
+          },
+          "response": [
+            {
+              "name": "200 - institutional",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"prompt\": \"Explica la recursividad en una frase\",\n  \"profile\": \"estudiante\",\n  \"documentType\": \"resumen\",\n  \"userId\": \"verify-groq\"\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": "{{base_url}}/api/{{api_version}}/generate"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "cookie": [],
+              "body": "{\n  \"ok\": true,\n  \"version\": \"v1\",\n  \"data\": {\n    \"text\": \"Recursion es la tecnica mediante la cual una funcion se invoca a si misma, descomponiendo el problema en versiones mas simples hasta que se cumple una condicion de termino.\",\n    \"sources_used\": [\"institutional\"],\n    \"metadata\": {\n      \"model\": \"openai/gpt-oss-120b\",\n      \"profile\": \"estudiante\",\n      \"documentType\": \"resumen\",\n      \"regenerated\": false,\n      \"processingTimeMs\": 1364,\n      \"userId\": \"verify-groq\"\n    }\n  }\n}"
+            },
+            {
+              "name": "200 - institutional + web",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"prompt\": \"Cuales son las tendencias actuales de la inteligencia artificial hoy en 2026?\",\n  \"profile\": \"docente\",\n  \"documentType\": \"articulo\",\n  \"userId\": \"test-web\",\n  \"wordCount\": 150\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": "{{base_url}}/api/{{api_version}}/generate"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "cookie": [],
+              "body": "{\n  \"ok\": true,\n  \"version\": \"v1\",\n  \"data\": {\n    \"text\": \"En 2026 la inteligencia artificial ha dejado de ser una novedad para constituirse como componente estructural de los sistemas de software...\",\n    \"sources_used\": [\"institutional\", \"web\"],\n    \"metadata\": {\n      \"model\": \"openai/gpt-oss-120b\",\n      \"profile\": \"docente\",\n      \"documentType\": \"articulo\",\n      \"regenerated\": false,\n      \"processingTimeMs\": 7113,\n      \"userId\": \"test-web\"\n    }\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "POST /generate (docente)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', function () { pm.response.to.have.status(200); });",
+                  "const body = pm.response.json();",
+                  "pm.test('ok es true', function () { pm.expect(body.ok).to.eql(true); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"prompt\": \"Disena una guia de clase sobre analisis de algoritmos con notacion Big-O\",\n  \"profile\": \"docente\",\n  \"documentType\": \"guia_clase\",\n  \"userId\": \"colega_docente_456\",\n  \"subject\": \"Analisis y Diseno de Algoritmos\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{base_url}}/api/{{api_version}}/generate",
+            "description": "Caso docente con perfil y densidad distintos. subject opcional."
+          }
+        },
+        {
+          "name": "POST /generate (documentType invalido)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 400', function () { pm.response.to.have.status(400); });",
+                  "const body = pm.response.json();",
+                  "pm.test('ok es false', function () { pm.expect(body.ok).to.eql(false); });",
+                  "pm.test('code VALIDATION_ERROR', function () { pm.expect(body.error.code).to.eql('VALIDATION_ERROR'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"prompt\": \"Escribe algo\",\n  \"profile\": \"estudiante\",\n  \"documentType\": \"tarea\",\n  \"userId\": \"colega_user_123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{base_url}}/api/{{api_version}}/generate",
+            "description": "Caso negativo: documentType fuera del enum -> 400 VALIDATION_ERROR."
+          }
+        }
+      ]
+    }
+  ]
+}
