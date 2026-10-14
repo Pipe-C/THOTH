@@ -12,7 +12,7 @@
     "android": "npm --workspace=apps/mobile run android",
     "backend:dev": "npm --workspace=apps/backend run dev"
   },
-  "keywords": ["toth", "pascual-bravo", "ai", "gemini", "academic"],
+  "keywords": ["toth", "pascual-bravo", "ai", "groq", "academic"],
   "author": "I.U. Pascual Bravo",
   "license": "UNLICENSED",
 

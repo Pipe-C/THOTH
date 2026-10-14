@@ -58,7 +58,7 @@ Usa el scope para indicar qué parte del monorepo toca el commit:
 - `(mock)` — datos de prueba (`mockData.ts`)
 - `(types)` — interfaces de dominio y tipos de rutas (`types/index.ts`, `navigation/types.ts`)
 - `(rag)` — lógica de RAG híbrido / vector search
-- `(gemini)` — integración con Gemini / anti-cliché
+- `(groq)` — integración con Groq / anti-cliché
 - `(docs)` — documentación general del repo
 
 ---
