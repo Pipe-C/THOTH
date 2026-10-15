@@ -1,10 +1,10 @@
 // ─────────────────────────────────────────────────────────────
-// api/v1/generate.ts — Endpoint 5: Orquestador RAG híbrido + Groq
+// api/v1/generate.ts — Endpoint 5: Hybrid RAG orchestrator + Groq
 // POST /api/v1/generate
 // ─────────────────────────────────────────────────────────────
-// Ruta delgada: delega en el controlador de generación.
-// El flujo RAG híbrido vive en lib/services (ragService,
-// generationService) y la validación en el controlador.
+// delegated route: delegates in the generate controller.
+// The hybrid RAG flow lives in lib/services (ragService,
+// generationService) and controller validation.
 // ─────────────────────────────────────────────────────────────
 
 import { defineRoute } from '../../lib/routes/defineRoute.js';

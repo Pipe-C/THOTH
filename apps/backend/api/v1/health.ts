@@ -2,7 +2,7 @@
 // api/v1/health.ts — Endpoint 1: Health Check
 // GET /api/v1/health
 // ─────────────────────────────────────────────────────────────
-// Ruta delgada: delega en el controlador de salud.
+// Delegated route: delegates in the health controller.
 // ─────────────────────────────────────────────────────────────
 
 import { defineRoute } from '../../lib/routes/defineRoute.js';
