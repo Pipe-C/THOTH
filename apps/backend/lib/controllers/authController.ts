@@ -1,7 +1,7 @@
 // ─────────────────────────────────────────────────────────────
-// lib/controllers/authController.ts — Controladores de autenticación
+// lib/controllers/authController.ts — Auth controllers.
 // ─────────────────────────────────────────────────────────────
-// Traduce el resultado de authService a una respuesta HTTP estándar.
+// Translates the result of authService to a standard HTTP response.
 // ─────────────────────────────────────────────────────────────
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
@@ -9,7 +9,7 @@ import { sendError, sendSuccess } from '../response.js';
 import { login, register } from '../services/authService.js';
 import type { LoginRequest, RegisterRequest } from '../types.js';
 
-/** POST /api/v1/auth/register — registro institucional. */
+/** POST /api/v1/auth/register — institutional register . */
 export function handleRegister(req: VercelRequest, res: VercelResponse): void {
   const result = register(req.body as Partial<RegisterRequest>);
 
@@ -21,7 +21,7 @@ export function handleRegister(req: VercelRequest, res: VercelResponse): void {
   sendSuccess(res, result.data, 201);
 }
 
-/** POST /api/v1/auth/login — inicio de sesión institucional. */
+/** POST /api/v1/auth/login — institutional login. */
 export function handleLogin(req: VercelRequest, res: VercelResponse): void {
   const result = login(req.body as Partial<LoginRequest>);
 
