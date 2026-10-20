@@ -1,4 +1,4 @@
-﻿// -----------------------------------------------------------------
+// -----------------------------------------------------------------
 // src/services/authClient.ts — Firebase Auth REST client
 // -----------------------------------------------------------------
 // Uses Firebase Identity Platform REST API so no native module is
@@ -13,11 +13,12 @@
 // -----------------------------------------------------------------
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { FIREBASE_CONFIG } from '../config/firebase';
 import type { UserProfileRole } from '../types';
 
 // ─── Constants ────────────────────────────────────────────────
 
-const FIREBASE_API_KEY = 'REPLACE_WITH_FIREBASE_WEB_API_KEY';
+const FIREBASE_API_KEY = FIREBASE_CONFIG.apiKey;
 const AUTH_BASE = 'https://identitytoolkit.googleapis.com/v1';
 
 // AsyncStorage keys

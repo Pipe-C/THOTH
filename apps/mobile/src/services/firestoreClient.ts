@@ -1,4 +1,4 @@
-﻿// -----------------------------------------------------------------
+// -----------------------------------------------------------------
 // src/services/firestoreClient.ts — Firestore REST client
 // -----------------------------------------------------------------
 // Uses Firestore REST API so no native module is required in Phase 4.
@@ -9,12 +9,13 @@
 //   users/{uid}/documents/{docId}  →  DocumentHistoryItem fields
 // -----------------------------------------------------------------
 
+import { FIREBASE_CONFIG } from '../config/firebase';
 import type { DocumentHistoryItem, DocumentType, UserProfileRole, SourceType } from '../types';
 
 // ─── Constants ────────────────────────────────────────────────
 
-const FIREBASE_API_KEY = 'REPLACE_WITH_FIREBASE_WEB_API_KEY';
-const FIREBASE_PROJECT_ID = 'REPLACE_WITH_FIREBASE_PROJECT_ID';
+const FIREBASE_API_KEY = FIREBASE_CONFIG.apiKey;
+const FIREBASE_PROJECT_ID = FIREBASE_CONFIG.projectId;
 const FIRESTORE_BASE = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents`;
 
 // ─── Internal Firestore document helpers ─────────────────────
