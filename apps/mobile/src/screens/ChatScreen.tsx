@@ -20,12 +20,15 @@ import { Badge } from '../components/Badge';
 import { PaperResultViewer } from '../components/PaperResultViewer';
 import { colors } from '../theme/tokens';
 import { ChatMessage, MOCK_INITIAL_MESSAGES } from '../services/mockData';
-import { DocumentType, UserProfileRole } from '../types';
+import { DocumentType, UserProfileRole, toApiDocumentType } from '../types';
+import { apiClient, isTothApiError } from '../services/apiClient';
+import { useAuth } from '../services/AuthContext';
 import { styles } from '../styles/ChatScreen.styles';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Chat'>;
 
 export const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
+  const { session } = useAuth();
   const activeRole: UserProfileRole = route.params?.activeRole || 'estudiante';
   const initialDocType: DocumentType = route.params?.documentType || 'consulta_libre';
   const docTitle = route.params?.initialTitle || 'Nueva Consulta Académica';
@@ -53,31 +56,49 @@ export const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
     };
 
     setMessages((prev) => [...prev, userMsg]);
+    const currentInput = inputText.trim();
     setInputText('');
     setIsGenerating(true);
 
-    // Simulación del motor RAG + Groq (Fase 2 mock)
-    setTimeout(() => {
-      let mockAssistantResponse = '';
-      if (activeRole === 'docente') {
-        mockAssistantResponse = `**Plan Microcurricular y Guía de Evaluación:**\n\nCon base en el contenido programático institucional de la I.U. Pascual Bravo, la temática solicitada se estructura en tres momentos de aprendizaje:\n\n1. **Fase Conceptual:** Formulación del problema ingenieril y deducción analítica de variables de control.\n2. **Laboratorio Experimental:** Validación física en bancos de trabajo con instrumentos calibrados.\n3. **Criterio de Evaluación:** Rúbrica con 40% desempeño experimental, 30% rigor metodológico y 30% sustentación oral.\n\n*Nota institucional:* Esta guía se encuentra alineada con las competencias de egreso de la Facultad de Ingeniería.`;
-      } else {
-        mockAssistantResponse = `**Desarrollo Académico Fundamentado:**\n\nRevisando el pénsum y syllabus correspondiente de la I.U. Pascual Bravo, la respuesta técnica a tu consulta se desarrolla en los siguientes puntos:\n\n• **Fundamento Teórico:** Los principios matemáticos aplicados garantizan el modelado dinámico del sistema sin incurrir en aproximaciones arbitrarias.\n• **Aplicación Práctica:** En los laboratorios institucionales se implementa este procedimiento mediante protocolos estandarizados de medición.\n• **Defensa Académica:** Para sustentar este trabajo, enfócate en la relación entre los datos empíricos obtenidos y las ecuaciones de estado del modelo.\n\nEl documento cumple con los estándares exigidos para entregas académicas de la institución.`;
+    // Phase 4: real call to the RAG + Groq backend
+    void (async () => {
+      try {
+        const result = await apiClient.generate({
+          prompt: currentInput,
+          profile: activeRole,
+          documentType: toApiDocumentType(selectedTemplate),
+          userId: session?.uid ?? 'anonymous',
+        });
+
+        const assistantMsg: ChatMessage = {
+          id: `msg_${Date.now() + 1}`,
+          sender: 'assistant',
+          content: result.text,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          sourcesUsed: result.sources_used.filter(
+            (s): s is 'institutional' | 'web' => s !== 'none',
+          ),
+          antiClicheApplied: antiClicheEnabled,
+          documentType: selectedTemplate,
+        };
+
+        setMessages((prev) => [...prev, assistantMsg]);
+      } catch (err) {
+        const errorText = isTothApiError(err)
+          ? err.message
+          : 'Error inesperado al contactar el servidor.';
+
+        const errorMsg: ChatMessage = {
+          id: `msg_${Date.now() + 1}`,
+          sender: 'assistant',
+          content: `⚠️ ${errorText}`,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        };
+        setMessages((prev) => [...prev, errorMsg]);
+      } finally {
+        setIsGenerating(false);
       }
-
-      const assistantMsg: ChatMessage = {
-        id: `msg_${Date.now() + 1}`,
-        sender: 'assistant',
-        content: mockAssistantResponse,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        sourcesUsed: ['institutional', 'web'],
-        antiClicheApplied: antiClicheEnabled,
-        documentType: selectedTemplate,
-      };
-
-      setMessages((prev) => [...prev, assistantMsg]);
-      setIsGenerating(false);
-    }, 1200);
+    })();
   };
 
   const applyTemplate = (type: DocumentType, promptSnippet: string) => {
