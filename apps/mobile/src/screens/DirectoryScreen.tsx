@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   SafeAreaView,
   ScrollView,
@@ -6,6 +6,7 @@ import {
   Text,
   TouchableOpacity,
   FlatList,
+  ActivityIndicator,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
@@ -14,17 +15,36 @@ import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { Badge } from '../components/Badge';
 import { MOCK_DIRECTORY_ITEMS, MOCK_CURRENT_USER } from '../services/mockData';
+import { getUserDocuments } from '../services/firestoreClient';
+import { useAuth } from '../services/AuthContext';
+import { colors } from '../theme/tokens';
 import { DocumentHistoryItem, DocumentType, UserProfileRole } from '../types';
 import { styles } from '../styles/DirectoryScreen.styles';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Directory'>;
 
 export const DirectoryScreen: React.FC<Props> = ({ navigation, route }) => {
+  const { session } = useAuth();
   const [activeRole, setActiveRole] = useState<UserProfileRole>(
-    route.params?.activeRole || 'estudiante'
+    route.params?.activeRole || session?.profile || 'estudiante'
   );
   const [selectedFilter, setSelectedFilter] = useState<'all' | DocumentType>('all');
+  // Start with mock items while real data loads
   const [items, setItems] = useState<DocumentHistoryItem[]>(MOCK_DIRECTORY_ITEMS);
+  const [isLoadingDocs, setIsLoadingDocs] = useState(false);
+
+  // Load real Firestore documents when there is an authenticated session
+  useEffect(() => {
+    if (!session) return;
+    setIsLoadingDocs(true);
+    void getUserDocuments(session.uid, session.idToken).then((firestoreDocs) => {
+      if (firestoreDocs.length > 0) {
+        // Merge: show real docs first, append mocks only when list is empty
+        setItems(firestoreDocs);
+      }
+      setIsLoadingDocs(false);
+    });
+  }, [session]);
 
   const filteredItems = items.filter((item) => {
     if (selectedFilter === 'all') return true;
@@ -56,6 +76,8 @@ export const DirectoryScreen: React.FC<Props> = ({ navigation, route }) => {
     });
   };
 
+  const displayEmail = session?.email ?? MOCK_CURRENT_USER.email;
+
   const handleNewChat = () => {
     navigation.navigate('Chat', {
       activeRole,
@@ -71,7 +93,7 @@ export const DirectoryScreen: React.FC<Props> = ({ navigation, route }) => {
           <View style={styles.headerTop}>
             <View>
               <Text style={styles.appTitle}>TOTH</Text>
-              <MicroCopy style={styles.userEmail}>{MOCK_CURRENT_USER.email}</MicroCopy>
+              <MicroCopy style={styles.userEmail}>{displayEmail}</MicroCopy>
             </View>
             <TouchableOpacity
               activeOpacity={0.8}
@@ -197,12 +219,21 @@ export const DirectoryScreen: React.FC<Props> = ({ navigation, route }) => {
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
-            <Card style={styles.emptyCard}>
-              <CardHeader style={styles.emptyTitle}>No hay documentos en esta categoría</CardHeader>
-              <MicroCopy style={styles.emptySubtitle}>
-                Crea una nueva consulta para generar entregables con RAG institucional.
-              </MicroCopy>
-            </Card>
+            isLoadingDocs ? (
+              <Card style={styles.emptyCard}>
+                <ActivityIndicator color={colors.primary} size="small" />
+                <MicroCopy style={styles.emptySubtitle}>
+                  Cargando documentos desde Firestore...
+                </MicroCopy>
+              </Card>
+            ) : (
+              <Card style={styles.emptyCard}>
+                <CardHeader style={styles.emptyTitle}>No hay documentos en esta categoría</CardHeader>
+                <MicroCopy style={styles.emptySubtitle}>
+                  Crea una nueva consulta para generar entregables con RAG institucional.
+                </MicroCopy>
+              </Card>
+            )
           }
           renderItem={({ item }) => (
             <TouchableOpacity
