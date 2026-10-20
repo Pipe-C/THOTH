@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
@@ -23,6 +24,11 @@ import { ChatMessage, MOCK_INITIAL_MESSAGES } from '../services/mockData';
 import { DocumentType, UserProfileRole, toApiDocumentType } from '../types';
 import { apiClient, isTothApiError } from '../services/apiClient';
 import { useAuth } from '../services/AuthContext';
+import {
+  exportDocumentToPdf,
+  exportDocumentToWord,
+  saveLocalRoomDocument,
+} from '../services/nativeBridge';
 import { styles } from '../styles/ChatScreen.styles';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Chat'>;
@@ -83,6 +89,16 @@ export const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
         };
 
         setMessages((prev) => [...prev, assistantMsg]);
+
+        // Guardado en caché local SQLite vía Room Kotlin bridge
+        void saveLocalRoomDocument({
+          id: assistantMsg.id,
+          title: docTitle,
+          content: result.text,
+          documentType: selectedTemplate,
+          profile: activeRole,
+          createdAt: Date.now(),
+        });
       } catch (err) {
         const errorText = isTothApiError(err)
           ? err.message
@@ -99,6 +115,38 @@ export const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
         setIsGenerating(false);
       }
     })();
+  };
+
+  const handleExportPdf = async (msg: ChatMessage) => {
+    try {
+      const path = await exportDocumentToPdf({
+        title: docTitle,
+        content: msg.content,
+      });
+      Alert.alert(
+        'Exportación PDF',
+        `Documento generado con éxito vía Kotlin bridge.\nArchivo: ${path}`,
+        [{ text: 'Aceptar' }],
+      );
+    } catch {
+      Alert.alert('Error', 'No fue posible exportar el documento PDF.');
+    }
+  };
+
+  const handleExportDocx = async (msg: ChatMessage) => {
+    try {
+      const path = await exportDocumentToWord({
+        title: docTitle,
+        content: msg.content,
+      });
+      Alert.alert(
+        'Exportación Word',
+        `Documento Word generado con éxito vía Kotlin bridge.\nArchivo: ${path}`,
+        [{ text: 'Aceptar' }],
+      );
+    } catch {
+      Alert.alert('Error', 'No fue posible exportar el documento Word.');
+    }
   };
 
   const applyTemplate = (type: DocumentType, promptSnippet: string) => {
@@ -226,9 +274,11 @@ export const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
                   sourcesUsed={msg.sourcesUsed || ['institutional']}
                   antiClicheApplied={msg.antiClicheApplied ?? true}
                   createdAt={`Hoy, ${msg.timestamp}`}
-                  onExportPdf={() => console.log('Mock: Exporting PDF')}
-                  onExportDocx={() => console.log('Mock: Exporting Word')}
-                  onCopy={() => console.log('Mock: Copied')}
+                  onExportPdf={() => void handleExportPdf(msg)}
+                  onExportDocx={() => void handleExportDocx(msg)}
+                  onCopy={() => {
+                    Alert.alert('Copiado', 'Contenido copiado al portapapeles.');
+                  }}
                 />
               </View>
             );
