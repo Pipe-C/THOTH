@@ -39,7 +39,7 @@ capas de diseño sobre el LLM:
 | 1 | Identidad visual y componentes base | ✅ Completa |
 | 2 | Pantallas de flujo principal (mock data) | ✅ Completa |
 | 3 | Backend: Vercel + Groq + Supabase RAG | ✅ Completa |
-| 4 | Integración real frontend-backend + puente Kotlin | ⏳ Pendiente |
+| 4 | Integración real frontend-backend + puente Kotlin | ✅ Completa |
 | 5 | Integración y validación final | ⏳ Pendiente |
 
 > El detalle completo de cada fase, criterios de aceptación y decisiones de arquitectura
@@ -95,7 +95,7 @@ THOTH/
 │   │       ├── styles/         # *.styles.ts por pantalla/componente
 │   │       ├── navigation/     # Configuración de React Navigation
 │   │       ├── theme/          # Tokens de identidad visual (tokens.ts)
-│   │       ├── services/       # Datos mock (clientes Firebase/API reales en Fase 4)
+│   │       ├── services/       # Clientes reales (apiClient, authClient, firestoreClient, nativeBridge)
 │   │       └── types/          # Interfaces compartidas (User, ChatMessage...)
 │   └── backend/                # Orquestador serverless en Vercel
 │       ├── api/v1/             # Rutas (entradas serverless: health, auth, vector-search, generate)
