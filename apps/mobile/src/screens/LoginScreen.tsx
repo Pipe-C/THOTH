@@ -15,12 +15,13 @@ import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { Badge } from '../components/Badge';
-import { MOCK_CURRENT_USER } from '../services/mockData';
+import { useAuth, isAuthError } from '../services/AuthContext';
 import { styles } from '../styles/LoginScreen.styles';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
 
 export const LoginScreen: React.FC<Props> = ({ navigation }) => {
+  const { login } = useAuth();
   const [email, setEmail] = useState('estudiante.demo@pascualbravo.edu.co');
   const [password, setPassword] = useState('pascual123');
   const [error, setError] = useState<string | null>(null);
@@ -34,11 +35,21 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
     }
 
     setIsLoading(true);
-    // Simulación mock de autenticación
-    setTimeout(() => {
-      setIsLoading(false);
-      navigation.replace('Directory', { activeRole: 'estudiante' });
-    }, 600);
+    void (async () => {
+      try {
+        const session = await login(email.trim(), password);
+        // Navigate passing the profile stored in the session
+        navigation.replace('Directory', { activeRole: session.profile });
+      } catch (err) {
+        setError(
+          isAuthError(err)
+            ? err.message
+            : 'Error inesperado. Intenta de nuevo.',
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    })();
   };
 
   const handleQuickFill = (role: 'estudiante' | 'docente') => {
