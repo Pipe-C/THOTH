@@ -1,20 +1,9 @@
-import React from 'react';
-import { ActivityIndicator, View } from 'react-native';
-import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { RootStackParamList } from './types';
-import {
-  LoginScreen,
-  RegisterScreen,
-  RoleSelectScreen,
-  DirectoryScreen,
-  ChatScreen,
-} from '../screens';
-import { useAuth } from '../services/AuthContext';
+import React from "react";
+import { NavigationContainer, DefaultTheme } from "@react-navigation/native";
+import { AuthNavigator } from "./AuthNavigator";
+import { MainNavigator } from "./MainNavigator";
+import { useAuth } from "../context/AuthContext";
 import { colors } from '../theme/tokens';
-import { styles } from '../styles/AppNavigator.styles';
-
-const Stack = createNativeStackNavigator<RootStackParamList>();
 
 const TothNavigationTheme = {
   ...DefaultTheme,
@@ -28,35 +17,16 @@ const TothNavigationTheme = {
   },
 };
 
-export const AppNavigator: React.FC = () => {
-  const { session, isLoading } = useAuth();
+export function AppNavigator(){
+  const { user, loading } = useAuth();
 
-  if (isLoading) {
-    return (
-      <View style={styles.loading}>
-        <ActivityIndicator color={colors.primary} size="large" />
-      </View>
-    );
+  if (loading) {
+    return null;
   }
 
   return (
-    <NavigationContainer theme={TothNavigationTheme}>
-      <Stack.Navigator
-        initialRouteName={session ? 'Directory' : 'Login'}
-        screenOptions={{
-          headerShown: false,
-          contentStyle: {
-            backgroundColor: colors.background,
-          },
-          animation: 'slide_from_right',
-        }}
-      >
-        <Stack.Screen name="Login" component={LoginScreen} />
-        <Stack.Screen name="Register" component={RegisterScreen} />
-        <Stack.Screen name="RoleSelect" component={RoleSelectScreen} />
-        <Stack.Screen name="Directory" component={DirectoryScreen} />
-        <Stack.Screen name="Chat" component={ChatScreen} />
-      </Stack.Navigator>
+    <NavigationContainer  theme={TothNavigationTheme}>
+      {user ? <MainNavigator /> : <AuthNavigator />}
     </NavigationContainer>
   );
-};
+}
