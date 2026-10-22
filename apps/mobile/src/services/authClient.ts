@@ -13,7 +13,10 @@
 // -----------------------------------------------------------------
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { FIREBASE_CONFIG } from '../config/firebase';
+import {
+  FIREBASE_CONFIG,
+  FIREBASE_CONFIG_ERROR,
+} from '../config/firebase';
 import type { UserProfileRole } from '../types';
 
 // ─── Constants ────────────────────────────────────────────────
@@ -72,6 +75,11 @@ function translateFirebaseError(code: string): string {
       return 'Esta cuenta ha sido deshabilitada.';
     case 'TOO_MANY_ATTEMPTS_TRY_LATER':
       return 'Demasiados intentos. Intenta de nuevo mas tarde.';
+    case 'API_KEY_INVALID':
+    case 'API key not valid. Please pass a valid API key.':
+      return 'La API key de Firebase no es válida. Revisa apps/mobile/.env.';
+    case 'CONFIGURATION_NOT_FOUND':
+      return 'El proyecto de Firebase no está habilitado para Auth.';
     default:
       return 'Error de autenticacion. Intenta de nuevo.';
   }
@@ -81,6 +89,13 @@ async function firebasePost<T>(
   endpoint: string,
   body: Record<string, unknown>,
 ): Promise<T> {
+  if (!FIREBASE_CONFIG.isConfigured) {
+    throw {
+      code: 'FIREBASE_NOT_CONFIGURED',
+      message: FIREBASE_CONFIG_ERROR,
+    } as AuthError;
+  }
+
   const url = `${AUTH_BASE}/${endpoint}?key=${FIREBASE_API_KEY}`;
 
   let response: Response;
