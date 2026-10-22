@@ -9,9 +9,12 @@ import { sendError, sendSuccess } from '../response.js';
 import { login, register } from '../services/authService.js';
 import type { LoginRequest, RegisterRequest } from '../types.js';
 
-/** POST /api/v1/auth/register — institutional register . */
-export function handleRegister(req: VercelRequest, res: VercelResponse): void {
-  const result = register(req.body as Partial<RegisterRequest>);
+/** POST /api/v1/auth/register — institutional register. */
+export async function handleRegister(
+  req: VercelRequest,
+  res: VercelResponse,
+): Promise<void> {
+  const result = await register(req.body as Partial<RegisterRequest>);
 
   if (!result.ok) {
     sendError(res, result.status, result.code, result.message);
@@ -22,8 +25,11 @@ export function handleRegister(req: VercelRequest, res: VercelResponse): void {
 }
 
 /** POST /api/v1/auth/login — institutional login. */
-export function handleLogin(req: VercelRequest, res: VercelResponse): void {
-  const result = login(req.body as Partial<LoginRequest>);
+export async function handleLogin(
+  req: VercelRequest,
+  res: VercelResponse,
+): Promise<void> {
+  const result = await login(req.body as Partial<LoginRequest>);
 
   if (!result.ok) {
     sendError(res, result.status, result.code, result.message);

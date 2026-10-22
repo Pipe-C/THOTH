@@ -3,7 +3,7 @@
 // ─────────────────────────────────────────────────────────────
 // Encapsula las reglas de negocio de autenticación (dominio
 // institucional, perfil y longitud de contraseña) y delega la
-// persistencia al userRepository. No conoce HTTP.
+// persistencia al userRepository en Supabase. No conoce HTTP.
 // ─────────────────────────────────────────────────────────────
 
 import { ALLOWED_DOMAIN, MIN_PASSWORD_LENGTH } from '../config.js';
@@ -38,11 +38,11 @@ function isValidInstitutionalEmail(email: string): boolean {
 
 /**
  * Registra un usuario validando dominio institucional, perfil y
- * contraseña. Persiste en el userRepository.
+ * contraseña. Persiste en Supabase mediante el userRepository.
  */
-export function register(
+export async function register(
   payload: Partial<RegisterRequest>,
-): ServiceResult<RegisteredUser> {
+): Promise<ServiceResult<RegisteredUser>> {
   const missing = requireFields(payload as RegisterRequest, [
     'email',
     'password',
@@ -84,24 +84,39 @@ export function register(
     );
   }
 
-  const stored = userRepository.save({
-    uid: `mock_${Date.now()}`,
-    email: email.trim().toLowerCase(),
+  const normalized = email.trim().toLowerCase();
+  const existing = await userRepository.findByEmail(normalized);
+
+  if (existing) {
+    return failure(
+      400,
+      ErrorCode.VALIDATION_ERROR,
+      'El correo electrónico ya se encuentra registrado.',
+    );
+  }
+
+  const stored = await userRepository.save({
+    email: normalized,
+    password,
     displayName,
     profile,
-    createdAt: new Date().toISOString(),
   });
 
-  return success(stored);
+  return success({
+    uid: stored.uid,
+    email: stored.email,
+    displayName: stored.displayName,
+    profile: stored.profile,
+    createdAt: stored.createdAt,
+  });
 }
 
 /**
- * Autentica un usuario institucional. En la Fase 4 se sustituye el
- * cuerpo por Firebase Auth REST, conservando esta firma.
+ * Autentica un usuario institucional consultando las credenciales en Supabase.
  */
-export function login(
+export async function login(
   payload: Partial<LoginRequest>,
-): ServiceResult<LoggedUser> {
+): Promise<ServiceResult<LoggedUser>> {
   const missing = requireFields(payload as LoginRequest, ['email', 'password']);
   if (missing.length > 0) {
     return failure(
@@ -126,15 +141,21 @@ export function login(
     return failure(400, ErrorCode.MISSING_FIELDS, 'La contraseña es requerida.');
   }
 
-  const existing = userRepository.findByEmail(normalized);
+  const user = await userRepository.verifyCredentials(normalized, password);
+
+  if (!user) {
+    return failure(
+      400,
+      ErrorCode.UNAUTHORIZED,
+      'Credenciales inválidas. Verifica tu correo y contraseña.',
+    );
+  }
 
   return success({
-    uid: existing?.uid ?? userRepository.createUid(normalized),
-    email: normalized,
-    // En Fase 4: idToken y refreshToken reales de Firebase.
+    uid: user.uid,
+    email: user.email,
     idToken: 'MOCK_ID_TOKEN_REPLACE_IN_PHASE_4',
     expiresIn: 3600,
-    // En Fase 4: leer de Firestore users/{uid}.profile
-    profile: existing?.profile ?? 'estudiante',
+    profile: user.profile,
   });
 }
