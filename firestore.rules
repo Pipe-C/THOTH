@@ -1,0 +1,19 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn(): bool {
+      return request.auth != null;
+    }
+
+    function isOwner(uid): bool {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    // Each user can only read and write their own profile, documents,
+    // conversations and messages. Everything else is denied.
+    match /users/{uid}/{document=**} {
+      allow read, write: if isOwner(uid);
+    }
+  }
+}
