@@ -40,7 +40,7 @@ capas de diseño sobre el LLM:
 | 2 | Pantallas de flujo principal (mock data) | ✅ Completa |
 | 3 | Backend: Vercel + Groq + Supabase RAG | ✅ Completa |
 | 4 | Integración real frontend-backend + puente Kotlin | ✅ Completa |
-| 5 | Integración y validación final | ⏳ Pendiente |
+| 5 | Integración y validación final | 🟡 En curso (E2E en emulador OK; falta desplegar el umbral 0.85 y validar el caso web) |
 
 > El detalle completo de cada fase, criterios de aceptación y decisiones de arquitectura
 > vive en el documento interno de directivas del agente (no versionado en este repo).
@@ -215,6 +215,48 @@ npm run android
 > Si `npm run android` no conecta con Metro, verifica que la Terminal 1 (`npm run mobile`)
 > siga corriendo. Para reiniciar Metro con caché limpia: `npm run mobile -- --reset-cache`
 > (si el puerto 8081 quedó ocupado, cierra el Metro anterior primero).
+
+### Variables de entorno (mobile)
+
+`apps/mobile/babel.config.js` inyecta la configuración pública en el bundle durante el
+build. Copia `apps/mobile/.env.example` a `apps/mobile/.env` y completa:
+
+```env
+FIREBASE_API_KEY=        # Project Settings > General > Web API Key
+FIREBASE_PROJECT_ID=     # Project Settings > General > Project ID
+API_BASE_URL=https://thoth-backend.vercel.app
+```
+
+> `API_BASE_URL` es opcional; si se omite, la app usa producción. Para un backend local
+> desde el emulador Android, usa `http://10.0.2.2:3000`.
+>
+> Los valores se incrustan en el bundle: tras cambiar `.env` reinicia Metro con
+> `--reset-cache` y vuelve a compilar. `.env` está en `.gitignore`; nunca lo subas.
+
+### Validación (Fase 5)
+
+```bash
+# Backend: pruebas y typecheck
+cd apps/backend
+npm test                 # 100 tests
+npm run lint             # tsc --noEmit
+
+# Typecheck de la app móvil
+cd apps/mobile
+npx tsc --noEmit
+
+# Build Android (debug)
+cd apps/mobile/android
+.\gradlew.bat assembleDebug
+
+# Casos RAG contra el backend (institucional, web, mixto)
+cd apps/backend
+npm run validate:rag
+# Contra local: BASE_URL=http://localhost:3000 npm run validate:rag
+```
+
+> Las cuentas demo de la pantalla de Login (`estudiante.demo@...`) deben existir en
+> Firebase Auth; si no, el formulario muestra "Las credenciales son incorrectas".
 
 ---
 
