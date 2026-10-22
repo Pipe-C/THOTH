@@ -23,6 +23,7 @@ import { colors } from '../theme/tokens';
 import { ChatMessage, MOCK_INITIAL_MESSAGES } from '../services/mockData';
 import { DocumentType, UserProfileRole, toApiDocumentType } from '../types';
 import { apiClient, isTothApiError } from '../services/apiClient';
+import { saveUserDocument } from '../services/firestoreClient';
 import { useAuth } from '../services/AuthContext';
 import {
   exportDocumentToPdf,
@@ -74,31 +75,48 @@ export const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
           profile: activeRole,
           documentType: toApiDocumentType(selectedTemplate),
           userId: session?.uid ?? 'anonymous',
+          antiClicheEnabled,
         });
+
+        const sourcesUsed = result.sources_used.filter(
+          (s): s is 'institutional' | 'web' => s !== 'none',
+        );
 
         const assistantMsg: ChatMessage = {
           id: `msg_${Date.now() + 1}`,
           sender: 'assistant',
           content: result.text,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          sourcesUsed: result.sources_used.filter(
-            (s): s is 'institutional' | 'web' => s !== 'none',
-          ),
+          sourcesUsed,
           antiClicheApplied: antiClicheEnabled,
           documentType: selectedTemplate,
         };
 
         setMessages((prev) => [...prev, assistantMsg]);
 
-        // Guardado en caché local SQLite vía Room Kotlin bridge
+        const createdAt = Date.now();
+
+        // Caché offline local (Room/SQLite) vía bridge Kotlin
         void saveLocalRoomDocument({
           id: assistantMsg.id,
           title: docTitle,
           content: result.text,
           documentType: selectedTemplate,
           profile: activeRole,
-          createdAt: Date.now(),
+          createdAt,
         });
+
+        // Historial en la nube (Firestore) para DirectoryScreen
+        if (session) {
+          void saveUserDocument(session.uid, session.idToken, {
+            title: docTitle,
+            preview: result.text.slice(0, 180),
+            documentType: selectedTemplate,
+            profile: activeRole,
+            sourcesUsed,
+            createdAt,
+          });
+        }
       } catch (err) {
         const errorText = isTothApiError(err)
           ? err.message

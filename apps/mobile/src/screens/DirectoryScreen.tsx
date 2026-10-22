@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   SafeAreaView,
   ScrollView,
@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useFocusEffect } from '@react-navigation/native';
 import { RootStackParamList } from '../navigation/types';
 import { Display, Subtitle, CardHeader, Body, MicroCopy } from '../components/Typography';
 import { Card } from '../components/Card';
@@ -33,18 +34,26 @@ export const DirectoryScreen: React.FC<Props> = ({ navigation, route }) => {
   const [items, setItems] = useState<DocumentHistoryItem[]>(MOCK_DIRECTORY_ITEMS);
   const [isLoadingDocs, setIsLoadingDocs] = useState(false);
 
-  // Load real Firestore documents when there is an authenticated session
-  useEffect(() => {
-    if (!session) return;
-    setIsLoadingDocs(true);
-    void getUserDocuments(session.uid, session.idToken).then((firestoreDocs) => {
-      if (firestoreDocs.length > 0) {
-        // Merge: show real docs first, append mocks only when list is empty
-        setItems(firestoreDocs);
-      }
-      setIsLoadingDocs(false);
-    });
-  }, [session]);
+  // Reload Firestore history every time the screen regains focus so a
+  // document generated in ChatScreen appears immediately.
+  useFocusEffect(
+    useCallback(() => {
+      if (!session) return undefined;
+
+      let isActive = true;
+      setIsLoadingDocs(true);
+
+      void getUserDocuments(session.uid, session.idToken).then((docs) => {
+        if (!isActive) return;
+        if (docs.length > 0) setItems(docs);
+        setIsLoadingDocs(false);
+      });
+
+      return () => {
+        isActive = false;
+      };
+    }, [session]),
+  );
 
   const filteredItems = items.filter((item) => {
     if (selectedFilter === 'all') return true;
