@@ -81,9 +81,12 @@ El monorepo (`apps/mobile`, `apps/backend`) usa npm workspaces. Rama de trabajo:
   - `Exportar PDF`: archivo de ~52 KB, cabecera `%PDF-1.4`, 1 página, `%%EOF` correcto.
   - `Exportar Word`: DOCX de ~1.8 KB, ZIP OOXML válido, `document.xml` con UTF-8
     correcto (é = U+00E9).
-- Firebase Auth: la pantalla de Login devuelve “Las credenciales son incorrectas” con
-  las cuentas demo, lo que confirma que Firebase está configurado y alcanzable (esas
-  cuentas no existen en el proyecto).
+- Cuentas demo creadas y verificadas (2026-10-22): login real OK para
+  `estudiante.demo@pascualbravo.edu.co` y `docente.investigador@pascualbravo.edu.co`.
+  Se validó una conversación autenticada de estudiante con 2 mensajes en Firestore
+  (`user` y `assistant`).
+- Login real conserva el perfil elegido mediante selector Estudiante/Docente; los
+  accesos rápidos configuran credenciales y rol.
 - Exportaciones revalidadas (2026-10-22): DOCX y PDF aparecen en
   `/sdcard/Download/TOTH` con nombres acentuados; DOCX con 4 entradas OOXML válidas y
   PDF `%PDF-1.4`; la hoja “Compartir” abre con el archivo adjunto y “Copiar” deja el
@@ -100,16 +103,11 @@ El monorepo (`apps/mobile`, `apps/backend`) usa npm workspaces. Rama de trabajo:
 
 ## 4. Pendientes
 
-1. Crear las cuentas demo en Firebase Auth o usar el flujo de registro real.
-2. Corregir el perfil en el login real: `signIn` usa `estudiante` como fallback y el
-   acceso rápido Docente entra como estudiante. Mientras tanto, para la demo Docente
-   usar “Omitir inicio de sesión” → elegir Docente, o implementar la lectura del perfil
-   desde `users/{uid}` en Firestore.
-3. Verificar el caso de regeneración anti-cliché con una respuesta que contenga
+1. Verificar el caso de regeneración anti-cliché con una respuesta que contenga
    muletillas (hoy se validó el badge y el envío del toggle).
-4. Validar el historial autenticado en un dispositivo con una cuenta real (las reglas
-   ya están publicadas en `toth-app-ceaf6`).
-5. Rotar la Supabase Secret key expuesta previamente y actualizarla en Vercel y `.env`.
+2. Rotar la Supabase Secret key expuesta previamente y actualizarla en Vercel y `.env`.
+3. Evaluar refresh de `idToken` para sesiones largas (hoy se guarda el token de la
+   sesión inicial).
 
 ## 5. Commits realizados (por capas)
 
@@ -122,6 +120,9 @@ El monorepo (`apps/mobile`, `apps/backend`) usa npm workspaces. Rama de trabajo:
 7. `build(android): corrige rutas del monorepo y añade Room`
 8. `feat(android): implementa Room y exportación PDF/Word reales`
 9. `docs: actualiza estado del proyecto y guía de validación`
+10. `fix(firebase): corrige la sintaxis de las reglas de Firestore`
+11. `docs: registra la publicación de las reglas de Firestore`
+12. `fix(auth): conserva el perfil elegido al iniciar sesión`
 
 > No se hace `git push` sin confirmación explícita.
 
