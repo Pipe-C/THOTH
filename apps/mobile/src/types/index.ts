@@ -67,6 +67,7 @@ export interface GenerateApiRequest {
   userId: string;
   wordCount?: number;
   subject?: string;
+  antiClicheEnabled?: boolean;
 }
 
 /** Successful response from POST /api/v1/generate */
