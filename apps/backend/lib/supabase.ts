@@ -17,9 +17,14 @@ const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
 /**
  * Minimal threshold cosen similarity (0–1) to be guessed a relevant
  * chunk. Below this value the fallback web is activated.
+ *
+ * `gte-small` (384 dims) scores unrelated Spanish queries around
+ * 0.76–0.83 and genuinely related ones above 0.89, so 0.75 was too
+ * permissive: it injected the pensum into any question. 0.85 keeps
+ * real matches while forcing web fallback on uncovered topics.
  */
 export const SIMILARITY_THRESHOLD = Number.parseFloat(
-  process.env.SIMILARITY_THRESHOLD ?? '0.75',
+  process.env.SIMILARITY_THRESHOLD ?? '0.85',
 );
 
 /** Name of the table where institutional embeddings are */
