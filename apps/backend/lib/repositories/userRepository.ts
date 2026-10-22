@@ -115,7 +115,7 @@ export async function verifyCredentials(
   password: string,
 ): Promise<StoredUser | undefined> {
   const user = await findByEmail(email);
-  if (!user || !user.passwordHash) return undefined;
+  if (!user?.passwordHash) return undefined;
 
   const matches = verifyPassword(password, user.passwordHash);
   return matches ? user : undefined;
