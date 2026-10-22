@@ -32,6 +32,22 @@ describe('generationService', () => {
     expect(complete).toHaveBeenCalledTimes(1);
   });
 
+  it('no aplica el filtro ni regenera cuando antiClicheEnabled es false', async () => {
+    vi.mocked(complete).mockResolvedValue({
+      text: 'En conclusión, el texto se devuelve tal cual.',
+      sourcesUsed: ['institutional'],
+    });
+
+    const result = await generateWithQualityFilter({
+      ...baseParams,
+      antiClicheEnabled: false,
+    });
+
+    expect(result.regenerated).toBe(false);
+    expect(result.text).toContain('En conclusión');
+    expect(complete).toHaveBeenCalledTimes(1);
+  });
+
   it('regenera cuando detecta muletillas y usa el prompt de corrección', async () => {
     vi.mocked(complete)
       .mockResolvedValueOnce({

@@ -1,8 +1,8 @@
 // ─────────────────────────────────────────────────────────────
-// api/v1/auth/login.ts — Endpoint 3: Inicio de sesión
+// api/v1/auth/login.ts — Endpoint 3: Login
 // POST /api/v1/auth/login
 // ─────────────────────────────────────────────────────────────
-// Ruta delgada: delega en el controlador de autenticación.
+// Delegated route: delegates in authentication controller.
 // ─────────────────────────────────────────────────────────────
 
 import { defineRoute } from '../../../lib/routes/defineRoute.js';

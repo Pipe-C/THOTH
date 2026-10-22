@@ -1,8 +1,8 @@
 // ─────────────────────────────────────────────────────────────
-// api/v1/vector-search.ts — Endpoint 4: Búsqueda vectorial RAG
+// api/v1/vector-search.ts — Endpoint 4: RAG vectorial search
 // POST /api/v1/vector-search
 // ─────────────────────────────────────────────────────────────
-// Ruta delgada: delega en el controlador de búsqueda vectorial.
+// Delegated route: delegates to vectorial search controller.
 // ─────────────────────────────────────────────────────────────
 
 import { defineRoute } from '../../lib/routes/defineRoute.js';

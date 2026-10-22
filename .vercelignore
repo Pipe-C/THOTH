@@ -1,0 +1,12 @@
+# Archivos que no se suben en un deploy por CLI (el proyecto usa Root Directory apps/backend)
+.git
+.idea
+node_modules
+**/node_modules
+apps/mobile
+apps/backend/.vercel
+apps/backend/coverage
+apps/backend/documents
+**/*.apk
+**/build
+*.log

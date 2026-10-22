@@ -104,6 +104,8 @@ export interface GroqGenerateParams {
   webContext: string;
   wordCount?: number;
   subject?: string;
+  /** When false, the negative prompt is omitted (UI toggle off). */
+  antiClicheEnabled?: boolean;
 }
 
 export interface GroqGenerateResult {
@@ -122,6 +124,7 @@ export async function generateContent(
     webContext,
     wordCount,
     subject,
+    antiClicheEnabled = true,
   } = params;
 
   const client = getGroqClient();
@@ -133,9 +136,11 @@ export async function generateContent(
 
   const systemInstruction = [
     SYSTEM_PROMPT_BASE,
-    NEGATIVE_PROMPT,
+    antiClicheEnabled ? NEGATIVE_PROMPT : null,
     PROFILE_PROMPTS[profile],
-  ].join('\n\n');
+  ]
+    .filter((section): section is string => section !== null)
+    .join('\n\n');
 
   const contextBlock = `CONTEXTO INSTITUCIONAL (Pascual Bravo — prioridad alta):
 ${institutionalContext || 'Sin contexto institucional disponible para esta consulta.'}

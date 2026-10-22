@@ -76,9 +76,9 @@ Todos los endpoints devuelven JSON con la misma forma canonica.
 | MISSING_FIELDS      | 400  | Faltan campos requeridos en el body         |
 | VALIDATION_ERROR    | 400  | Valor de campo invalido (enum, formato)     |
 | INVALID_DOMAIN      | 400  | Email no es @pascualbravo.edu.co            |
-| UNAUTHORIZED        | 401  | Token ausente o invalido                    |
-| TOKEN_EXPIRED       | 401  | Token de Firebase expirado                  |
-| FORBIDDEN           | 403  | El usuario no tiene permiso                 |
+| UNAUTHORIZED        | 400  | Credenciales invalidas en auth/login        |
+| TOKEN_EXPIRED       | —    | No implementado (RAG aun no valida tokens)  |
+| FORBIDDEN           | —    | No implementado todavia                     |
 | METHOD_NOT_ALLOWED  | 405  | Verbo HTTP incorrecto para la ruta          |
 | RATE_LIMIT_EXCEEDED | 429  | Demasiadas solicitudes en poco tiempo       |
 | LLM_ERROR           | 502  | Error de comunicacion con Groq              |
@@ -122,6 +122,11 @@ como variable, asi que tambien funciona sin importar el environment.
 1. En la barra lateral: Collections > + > Blank Collection.
 2. Nombra la coleccion TOTH API v1.
 3. Crea estas carpetas dentro: Health, Auth, RAG.
+
+> **Estado del auth:** el codigo de `develop` persiste y valida usuarios en
+> Supabase. La instancia de produccion puede seguir respondiendo con `uid` mock
+> hasta el proximo deploy del backend. Los endpoints RAG son publicos y no
+> validan `Authorization`.
 
 ---
 
@@ -184,7 +189,9 @@ degradado esta en data.status. Esto permite distinguir entre API inalcanzable
 ### 4.2  POST /api/v1/auth/register
 
 Carpeta: Auth
-Proposito: registrar un nuevo usuario con email institucional.
+Proposito: registrar un nuevo usuario con email institucional. El usuario se
+persiste en la tabla `users` de Supabase (migracion
+`0003_create_users_table.sql`) y la contrasena se guarda como hash scrypt.
 
 Configuracion en Postman:
 
@@ -218,11 +225,11 @@ Respuesta exitosa - 201 Created:
       "ok": true,
       "version": "v1",
       "data": {
-        "uid": "mock_1717000000000",
+        "uid": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
         "email": "estudiante.prueba@pascualbravo.edu.co",
         "displayName": "Estudiante de Prueba",
         "profile": "estudiante",
-        "createdAt": "2026-10-08T15:30:00.000Z"
+        "createdAt": "2026-10-22T19:05:00.000Z"
       }
     }
 
@@ -231,6 +238,7 @@ Errores esperados:
 | Escenario                      | Code             | HTTP |
 |:-------------------------------|:-----------------|:----:|
 | Email con dominio externo      | INVALID_DOMAIN   | 400  |
+| Correo ya registrado           | VALIDATION_ERROR | 400  |
 | Falta displayName              | MISSING_FIELDS   | 400  |
 | profile con valor invalido     | VALIDATION_ERROR | 400  |
 | Password menor a 8 caracteres  | VALIDATION_ERROR | 400  |
@@ -240,7 +248,8 @@ Errores esperados:
 ### 4.3  POST /api/v1/auth/login
 
 Carpeta: Auth
-Proposito: iniciar sesion con email y contrasena institucionales.
+Proposito: iniciar sesion con email y contrasena institucionales. El backend
+consulta la tabla `users` de Supabase y verifica el hash scrypt de la contrasena.
 
 Configuracion en Postman:
 
@@ -270,7 +279,7 @@ Respuesta exitosa - 200 OK:
       "ok": true,
       "version": "v1",
       "data": {
-        "uid": "mock_user_estudiante.prueba",
+        "uid": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
         "email": "estudiante.prueba@pascualbravo.edu.co",
         "idToken": "MOCK_ID_TOKEN_REPLACE_IN_PHASE_4",
         "expiresIn": 3600,
@@ -278,16 +287,18 @@ Respuesta exitosa - 200 OK:
       }
     }
 
-Nota Fase 4: idToken sera un JWT real de Firebase. Guardalo como variable
-auth_token en Postman y usalo como Authorization: Bearer {{auth_token}}
-en los endpoints protegidos.
+Nota: `idToken` sigue siendo un placeholder; aun no es un JWT y ningun endpoint
+lo valida. El request lo guarda en `auth_token`, pero los endpoints RAG son
+publicos. Si ves un `uid` con prefijo `mock_`, la instancia de produccion todavia
+no tiene desplegado el auth nuevo de `develop`.
 
 Errores esperados:
 
-| Escenario                 | Code           | HTTP |
-|:--------------------------|:---------------|:----:|
-| Email con dominio externo | INVALID_DOMAIN | 400  |
-| Falta email o password    | MISSING_FIELDS | 400  |
+| Escenario                  | Code           | HTTP |
+|:---------------------------|:---------------|:----:|
+| Email con dominio externo  | INVALID_DOMAIN | 400  |
+| Falta email o password     | MISSING_FIELDS | 400  |
+| Contrasena incorrecta      | UNAUTHORIZED   | 400  |
 
 ---
 
@@ -377,7 +388,7 @@ Body - Caso Estudiante / Ensayo:
       "prompt": "Explica el concepto de recursividad y cuando es preferible sobre la iteracion",
       "profile": "estudiante",
       "documentType": "ensayo",
-      "userId": "mock_user_123",
+      "userId": "a1b2c3d4-1111-4222-8333-444455556666",
       "wordCount": 400,
       "subject": "Fundamentos de Programacion"
     }
@@ -388,7 +399,7 @@ Body - Caso Docente / Guia de Clase:
       "prompt": "Disena una guia de clase sobre analisis de algoritmos con notacion Big-O",
       "profile": "docente",
       "documentType": "guia_clase",
-      "userId": "mock_docente_456",
+      "userId": "b2c3d4e5-2222-4333-9444-555566667777",
       "subject": "Analisis y Diseno de Algoritmos"
     }
 
@@ -398,7 +409,7 @@ Body - Caso Informe de Laboratorio:
       "prompt": "Informe sobre la practica de medicion de resistencia con multimetro",
       "profile": "estudiante",
       "documentType": "informe_laboratorio",
-      "userId": "mock_user_789",
+      "userId": "c3d4e5f6-3333-4444-8555-666677778888",
       "subject": "Circuitos Electricos I"
     }
 
@@ -430,7 +441,7 @@ Respuesta exitosa - 200 OK:
           "documentType": "ensayo",
           "regenerated": false,
           "processingTimeMs": 1842,
-          "userId": "mock_user_123"
+          "userId": "a1b2c3d4-1111-4222-8333-444455556666"
         }
       }
     }
@@ -513,7 +524,7 @@ El repo ya incluye una coleccion lista para importar:
 3. La coleccion ya trae `base_url = https://thoth-backend.vercel.app`
    como variable propia, asi que funciona sin configuracion adicional.
    Si importaste el environment, seleccionalo en la esquina superior derecha.
-4. Ejecuta los requests en orden: Health > Auth > RAG.
+4. Ejecuta los requests en orden: Health > Register (una vez) > Login > RAG.
 
 Contenido de la coleccion importada:
 
@@ -526,13 +537,14 @@ Contenido de la coleccion importada:
 Cada request incluye:
 - un script de Tests con aserciones basicas (status y `ok`), verifiable con
   el Collection Runner;
-- ejemplos de respuesta guardados (casos 200 y errores 400) que coinciden con
-  la respuesta real de produccion.
+- ejemplos de respuesta guardados (casos 200 y errores 400) que reflejan el
+  contrato de `develop`; produccion puede seguir mostrando respuestas mock
+  hasta el proximo deploy del backend.
 
-El request POST /auth/login guarda el `idToken` en la variable de coleccion
-`auth_token` automaticamente; los requests de RAG ya incluyen el header
-`Authorization: Bearer {{auth_token}}` (deshabilitado por defecto, ya que los
-endpoints aun no exigen autenticacion).
+El request POST /auth/login guarda el `idToken` placeholder en la variable de
+coleccion `auth_token` automaticamente; los requests de RAG incluyen el header
+`Authorization: Bearer {{auth_token}}` deshabilitado por defecto, porque los
+endpoints son publicos y aun no validan tokens.
 
 ### Opcion B: Crear manualmente
 

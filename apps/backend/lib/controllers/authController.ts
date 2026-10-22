@@ -1,7 +1,7 @@
 // ─────────────────────────────────────────────────────────────
-// lib/controllers/authController.ts — Controladores de autenticación
+// lib/controllers/authController.ts — Auth controllers.
 // ─────────────────────────────────────────────────────────────
-// Traduce el resultado de authService a una respuesta HTTP estándar.
+// Translates the result of authService to a standard HTTP response.
 // ─────────────────────────────────────────────────────────────
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
@@ -9,9 +9,12 @@ import { sendError, sendSuccess } from '../response.js';
 import { login, register } from '../services/authService.js';
 import type { LoginRequest, RegisterRequest } from '../types.js';
 
-/** POST /api/v1/auth/register — registro institucional. */
-export function handleRegister(req: VercelRequest, res: VercelResponse): void {
-  const result = register(req.body as Partial<RegisterRequest>);
+/** POST /api/v1/auth/register — institutional register. */
+export async function handleRegister(
+  req: VercelRequest,
+  res: VercelResponse,
+): Promise<void> {
+  const result = await register(req.body as Partial<RegisterRequest>);
 
   if (!result.ok) {
     sendError(res, result.status, result.code, result.message);
@@ -21,9 +24,12 @@ export function handleRegister(req: VercelRequest, res: VercelResponse): void {
   sendSuccess(res, result.data, 201);
 }
 
-/** POST /api/v1/auth/login — inicio de sesión institucional. */
-export function handleLogin(req: VercelRequest, res: VercelResponse): void {
-  const result = login(req.body as Partial<LoginRequest>);
+/** POST /api/v1/auth/login — institutional login. */
+export async function handleLogin(
+  req: VercelRequest,
+  res: VercelResponse,
+): Promise<void> {
+  const result = await login(req.body as Partial<LoginRequest>);
 
   if (!result.ok) {
     sendError(res, result.status, result.code, result.message);

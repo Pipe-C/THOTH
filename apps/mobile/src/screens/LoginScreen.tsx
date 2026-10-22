@@ -15,14 +15,17 @@ import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { Badge } from '../components/Badge';
-import { MOCK_CURRENT_USER } from '../services/mockData';
+import { useAuth, isAuthError } from '../services/AuthContext';
+import type { UserProfileRole } from '../types';
 import { styles } from '../styles/LoginScreen.styles';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
 
 export const LoginScreen: React.FC<Props> = ({ navigation }) => {
+  const { login } = useAuth();
   const [email, setEmail] = useState('estudiante.demo@pascualbravo.edu.co');
-  const [password, setPassword] = useState('pascual123');
+  const [password, setPassword] = useState('estudiante2026');
+  const [profile, setProfile] = useState<UserProfileRole>('estudiante');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -34,14 +37,25 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
     }
 
     setIsLoading(true);
-    // Simulación mock de autenticación
-    setTimeout(() => {
-      setIsLoading(false);
-      navigation.replace('Directory', { activeRole: 'estudiante' });
-    }, 600);
+    void (async () => {
+      try {
+        const session = await login(email.trim(), password, profile);
+        // Navigate passing the profile stored in the session
+        navigation.replace('Directory', { activeRole: session.profile });
+      } catch (err) {
+        setError(
+          isAuthError(err)
+            ? err.message
+            : 'Error inesperado. Intenta de nuevo.',
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    })();
   };
 
-  const handleQuickFill = (role: 'estudiante' | 'docente') => {
+  const handleQuickFill = (role: UserProfileRole) => {
+    setProfile(role);
     if (role === 'estudiante') {
       setEmail('estudiante.demo@pascualbravo.edu.co');
       setPassword('estudiante2026');
@@ -99,6 +113,48 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
               onChangeText={setPassword}
               secureTextEntry
             />
+
+            <MicroCopy style={styles.roleLabel}>Perfil con el que ingresas</MicroCopy>
+            <View style={styles.roleRow}>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityState={{ selected: profile === 'estudiante' }}
+                onPress={() => setProfile('estudiante')}
+                style={[
+                  styles.roleChip,
+                  profile === 'estudiante' && styles.roleChipActive,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.roleChipText,
+                    profile === 'estudiante' && styles.roleChipTextActive,
+                  ]}
+                >
+                  Estudiante
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityState={{ selected: profile === 'docente' }}
+                onPress={() => setProfile('docente')}
+                style={[
+                  styles.roleChip,
+                  profile === 'docente' && styles.roleChipActive,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.roleChipText,
+                    profile === 'docente' && styles.roleChipTextActive,
+                  ]}
+                >
+                  Docente
+                </Text>
+              </TouchableOpacity>
+            </View>
 
             <Button
               variant="primary"

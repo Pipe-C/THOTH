@@ -1,8 +1,8 @@
 // ─────────────────────────────────────────────────────────────
-// api/v1/auth/register.ts — Endpoint 2: Registro de usuario
+// api/v1/auth/register.ts — Endpoint 2: Register
 // POST /api/v1/auth/register
 // ─────────────────────────────────────────────────────────────
-// Ruta delgada: delega en el controlador de autenticación.
+// Delegated route: delegates to authentication controller.
 // ─────────────────────────────────────────────────────────────
 
 import { defineRoute } from '../../../lib/routes/defineRoute.js';

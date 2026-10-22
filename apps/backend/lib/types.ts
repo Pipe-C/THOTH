@@ -31,6 +31,11 @@ export interface GenerateRequest {
   wordCount?: number;
   /** Tema or topic (optional, flourish the context) */
   subject?: string;
+  /**
+   * Whether the anti-cliche layer is active. Defaults to true when
+   * omitted; the mobile toggle sends it explicitly.
+   */
+  antiClicheEnabled?: boolean;
 }
 
 // ─── Payload entry for /api/v1/vector-search ───────────

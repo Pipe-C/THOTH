@@ -1,12 +1,12 @@
 // ─────────────────────────────────────────────────────────────
-// lib/controllers/generateController.ts — Controlador RAG + generación
+// lib/controllers/generateController.ts — RAG Controlller + generation
 // POST /api/v1/generate
 // ─────────────────────────────────────────────────────────────
-// Flujo completo:
-//  1. Valida el payload de entrada.
-//  2. Resuelve el contexto híbrido (institucional + web).
-//  3. Genera con el LLM aplicando el filtro anti-cliché.
-//  4. Retorna la respuesta sanitizada con metadatos de origen.
+// Complete flow:
+//  1. Validates payload entry.
+//  2. Resolves hybrid context (institutional + web).
+//  3. Generates with LLM applying anti-cliche filter.
+//  4. Returns a sanitized response with origin metadata.
 // ─────────────────────────────────────────────────────────────
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
@@ -17,7 +17,7 @@ import { generateWithQualityFilter } from '../services/generationService.js';
 import type { ErrorCodeType } from '../response.js';
 import type { DocumentType, GenerateRequest } from '../types.js';
 
-// ─── Validación ──────────────────────────────────────────────
+// ─── Validation ──────────────────────────────────────────────
 
 const VALID_DOC_TYPES: DocumentType[] = [
   'ensayo',
@@ -38,7 +38,7 @@ interface ValidationResult {
   data?: GenerateRequest;
 }
 
-/** Valida el payload de /generate: campos requeridos, perfil y tipo de doc. */
+/** Validates /generate payload: required camps, profile and doc type. */
 function validateGeneratePayload(
   body: Partial<GenerateRequest>,
 ): ValidationResult {
@@ -84,9 +84,9 @@ function validateGeneratePayload(
   return { data: body as GenerateRequest };
 }
 
-// ─── Manejo de errores ───────────────────────────────────────
+// ─── Error handling ───────────────────────────────────────
 
-/** Traduce los errores con prefijo de las dependencias a códigos HTTP. */
+/** Translates error with prefix of the dependencies to HTTP codes. */
 function handleGenerateError(res: VercelResponse, err: unknown): void {
   const message = err instanceof Error ? err.message : String(err);
 
@@ -123,7 +123,7 @@ function handleGenerateError(res: VercelResponse, err: unknown): void {
 
 // ─── Handler ──────────────────────────────────────────────────
 
-/** POST /api/v1/generate — orquestador RAG híbrido + LLM. */
+/** POST /api/v1/generate — orchestrator hybrid RAG + LLM. */
 export async function handleGenerate(
   req: VercelRequest,
   res: VercelResponse,
@@ -142,8 +142,15 @@ export async function handleGenerate(
     return;
   }
 
-  const { prompt, profile, documentType, userId, wordCount, subject } =
-    validation.data!;
+  const {
+    prompt,
+    profile,
+    documentType,
+    userId,
+    wordCount,
+    subject,
+    antiClicheEnabled,
+  } = validation.data!;
 
   const startTime = Date.now();
 
@@ -159,6 +166,7 @@ export async function handleGenerate(
       webContext,
       wordCount,
       subject,
+      antiClicheEnabled,
     });
 
     sendSuccess(res, {

@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "b7d1e2c3-4a5f-4e6a-9c1d-0a1b2c3d4e5f",
     "name": "TOTH API v1",
-    "description": "Backend de TOTH (I.U. Pascual Bravo). Coleccion lista para importar con el base_url de produccion ya configurado.\n\nFlujo recomendado:\n1) Health para confirmar servicios.\n2) Auth > Login (guarda auth_token automaticamente).\n3) RAG > Vector search y Generate.\n\nEndpoints de auth son MOCK (Fase 2); los endpoints RAG son reales (Supabase + Groq + Tavily).",
+    "description": "Backend de TOTH (I.U. Pascual Bravo). Coleccion lista para importar con el base_url de produccion ya configurado.\n\nFlujo recomendado:\n1) Health para confirmar servicios.\n2) Auth > Register (una vez) y Login.\n3) RAG > Vector search y Generate.\n\nAuth (codigo en develop): persiste usuarios en la tabla `users` de Supabase, valida credenciales con scrypt y devuelve un idToken placeholder (aun no es un JWT). Requiere la migracion 0003_create_users_table.sql.\n\nRAG: real (Supabase pgvector + Groq + Tavily) y publico; no valida Authorization.\n\nNota de despliegue: la instancia de produccion puede seguir sirviendo la version anterior de auth (uid mock) hasta el proximo deploy del backend.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -72,7 +72,7 @@
     },
     {
       "name": "Auth",
-      "description": "Registro y login. MOCK en Fase 2: no persisten ni validan credenciales reales.",
+      "description": "Registro y login contra la tabla `users` de Supabase. El registro valida dominio institucional, perfil y contrasena (minimo 8); el login valida el hash scrypt. El idToken devuelto sigue siendo placeholder y ningun endpoint lo valida todavia.",
       "item": [
         {
           "name": "POST /auth/register",
@@ -85,7 +85,8 @@
                   "pm.test('status 201', function () { pm.response.to.have.status(201); });",
                   "const body = pm.response.json();",
                   "pm.test('ok es true', function () { pm.expect(body.ok).to.eql(true); });",
-                  "pm.test('devuelve uid', function () { pm.expect(body.data.uid).to.be.a('string'); });"
+                  "pm.test('devuelve uid', function () { pm.expect(body.data.uid).to.be.a('string'); });",
+                  "pm.test('conserva email y perfil', function () { pm.expect(body.data.email).to.be.a('string'); pm.expect(['estudiante','docente']).to.include(body.data.profile); });"
                 ]
               }
             }
@@ -101,7 +102,7 @@
               "options": { "raw": { "language": "json" } }
             },
             "url": "{{base_url}}/api/{{api_version}}/auth/register",
-            "description": "Registra un usuario con email institucional (@pascualbravo.edu.co). password >= 8 caracteres. profile: estudiante | docente."
+            "description": "Registra un usuario en Supabase (`users`) con email institucional (@pascualbravo.edu.co). password >= 8 caracteres. profile: estudiante | docente. El correo es unico: repetir el registro devuelve 400 VALIDATION_ERROR. Cambia el email o usa otro usuario para volver a probar."
           },
           "response": [
             {
@@ -125,7 +126,7 @@
                 { "key": "Content-Type", "value": "application/json" }
               ],
               "cookie": [],
-              "body": "{\n  \"ok\": true,\n  \"version\": \"v1\",\n  \"data\": {\n    \"uid\": \"mock_1792010574367\",\n    \"email\": \"colega.prueba@pascualbravo.edu.co\",\n    \"displayName\": \"Colega Prueba\",\n    \"profile\": \"estudiante\",\n    \"createdAt\": \"2026-10-14T20:42:54.367Z\"\n  },\n  \"meta\": {\n    \"requestId\": \"toth-1792010574369-cad778ea\",\n    \"timestamp\": \"2026-10-14T20:42:54.369Z\"\n  }\n}"
+              "body": "{\n  \"ok\": true,\n  \"version\": \"v1\",\n  \"data\": {\n    \"uid\": \"f47ac10b-58cc-4372-a567-0e02b2c3d479\",\n    \"email\": \"colega.prueba@pascualbravo.edu.co\",\n    \"displayName\": \"Colega Prueba\",\n    \"profile\": \"estudiante\",\n    \"createdAt\": \"2026-10-22T19:05:00.000Z\"\n  },\n  \"meta\": {\n    \"requestId\": \"toth-1792695900000-cad778ea\",\n    \"timestamp\": \"2026-10-22T19:05:00.000Z\"\n  }\n}"
             },
             {
               "name": "400 - INVALID_DOMAIN",
@@ -148,7 +149,30 @@
                 { "key": "Content-Type", "value": "application/json" }
               ],
               "cookie": [],
-              "body": "{\n  \"ok\": false,\n  \"version\": \"v1\",\n  \"error\": {\n    \"code\": \"INVALID_DOMAIN\",\n    \"message\": \"El correo debe pertenecer al dominio @pascualbravo.edu.co\"\n  },\n  \"meta\": {\n    \"requestId\": \"toth-1792010570000-aa11bb22\",\n    \"timestamp\": \"2026-10-14T20:42:50.000Z\"\n  }\n}"
+              "body": "{\n  \"ok\": false,\n  \"version\": \"v1\",\n  \"error\": {\n    \"code\": \"INVALID_DOMAIN\",\n    \"message\": \"Solo se permiten correos del dominio @pascualbravo.edu.co. Recibido: usuario@gmail.com\"\n  },\n  \"meta\": {\n    \"requestId\": \"toth-1792695900000-aa11bb22\",\n    \"timestamp\": \"2026-10-22T19:05:00.000Z\"\n  }\n}"
+            },
+            {
+              "name": "400 - correo ya registrado",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"colega.prueba@pascualbravo.edu.co\",\n  \"password\": \"MiPassword123\",\n  \"displayName\": \"Colega Prueba\",\n  \"profile\": \"estudiante\"\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": "{{base_url}}/api/{{api_version}}/auth/register"
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "cookie": [],
+              "body": "{\n  \"ok\": false,\n  \"version\": \"v1\",\n  \"error\": {\n    \"code\": \"VALIDATION_ERROR\",\n    \"message\": \"El correo electrónico ya se encuentra registrado.\"\n  },\n  \"meta\": {\n    \"requestId\": \"toth-1792695900000-cc33dd44\",\n    \"timestamp\": \"2026-10-22T19:05:00.000Z\"\n  }\n}"
             }
           ]
         },
@@ -163,6 +187,7 @@
                   "pm.test('status 200', function () { pm.response.to.have.status(200); });",
                   "const body = pm.response.json();",
                   "pm.test('ok es true', function () { pm.expect(body.ok).to.eql(true); });",
+                  "pm.test('devuelve perfil', function () { pm.expect(['estudiante','docente']).to.include(body.data.profile); });",
                   "if (body.ok && body.data && body.data.idToken) {",
                   "  pm.collectionVariables.set('auth_token', body.data.idToken);",
                   "  console.log('auth_token guardado');",
@@ -182,7 +207,7 @@
               "options": { "raw": { "language": "json" } }
             },
             "url": "{{base_url}}/api/{{api_version}}/auth/login",
-            "description": "Inicia sesion. MOCK: devuelve un idToken placeholder y lo guarda en la variable de coleccion auth_token."
+            "description": "Valida email y contrasena contra la tabla `users` de Supabase. Devuelve uid, email, profile y un idToken placeholder; el script lo guarda en `auth_token`, pero los endpoints RAG aun no lo validan. Credenciales incorrectas: 400 UNAUTHORIZED."
           },
           "response": [
             {
@@ -206,7 +231,30 @@
                 { "key": "Content-Type", "value": "application/json" }
               ],
               "cookie": [],
-              "body": "{\n  \"ok\": true,\n  \"version\": \"v1\",\n  \"data\": {\n    \"uid\": \"mock_colega.prueba\",\n    \"email\": \"colega.prueba@pascualbravo.edu.co\",\n    \"idToken\": \"MOCK_ID_TOKEN_REPLACE_IN_PHASE_4\",\n    \"expiresIn\": 3600,\n    \"profile\": \"estudiante\"\n  },\n  \"meta\": {\n    \"requestId\": \"toth-1792010574620-e742f3a9\",\n    \"timestamp\": \"2026-10-14T20:42:54.620Z\"\n  }\n}"
+              "body": "{\n  \"ok\": true,\n  \"version\": \"v1\",\n  \"data\": {\n    \"uid\": \"f47ac10b-58cc-4372-a567-0e02b2c3d479\",\n    \"email\": \"colega.prueba@pascualbravo.edu.co\",\n    \"idToken\": \"MOCK_ID_TOKEN_REPLACE_IN_PHASE_4\",\n    \"expiresIn\": 3600,\n    \"profile\": \"estudiante\"\n  },\n  \"meta\": {\n    \"requestId\": \"toth-1792695900000-e742f3a9\",\n    \"timestamp\": \"2026-10-22T19:05:00.000Z\"\n  }\n}"
+            },
+            {
+              "name": "400 - credenciales invalidas",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"colega.prueba@pascualbravo.edu.co\",\n  \"password\": \"PasswordIncorrecta\"\n}",
+                  "options": { "raw": { "language": "json" } }
+                },
+                "url": "{{base_url}}/api/{{api_version}}/auth/login"
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "cookie": [],
+              "body": "{\n  \"ok\": false,\n  \"version\": \"v1\",\n  \"error\": {\n    \"code\": \"UNAUTHORIZED\",\n    \"message\": \"Credenciales inválidas. Verifica tu correo y contraseña.\"\n  },\n  \"meta\": {\n    \"requestId\": \"toth-1792695900000-bb22cc33\",\n    \"timestamp\": \"2026-10-22T19:05:00.000Z\"\n  }\n}"
             }
           ]
         }
@@ -214,7 +262,7 @@
     },
     {
       "name": "RAG",
-      "description": "Busqueda vectorial y generacion RAG hibrido (institucional + web). Endpoints reales.",
+      "description": "Busqueda vectorial y generacion RAG hibrido (institucional + web). Endpoints reales y publicos: no validan Authorization ni el idToken de Auth.",
       "item": [
         {
           "name": "POST /vector-search",

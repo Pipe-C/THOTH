@@ -9,75 +9,332 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
+import Clipboard from '@react-native-clipboard/clipboard';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
-import { Display, Subtitle, CardHeader, Body, MicroCopy } from '../components/Typography';
+import { CardHeader, Body, MicroCopy } from '../components/Typography';
 import { Card } from '../components/Card';
-import { Button } from '../components/Button';
 import { Toggle } from '../components/Toggle';
 import { Badge } from '../components/Badge';
 import { PaperResultViewer } from '../components/PaperResultViewer';
 import { colors } from '../theme/tokens';
-import { ChatMessage, MOCK_INITIAL_MESSAGES } from '../services/mockData';
-import { DocumentType, UserProfileRole } from '../types';
+import { ChatMessage, DocumentType, UserProfileRole, toApiDocumentType } from '../types';
+import { apiClient, isTothApiError } from '../services/apiClient';
+import {
+  appendMessage,
+  createConversation,
+  loadMessages,
+  updateConversation,
+} from '../services/chatRepository';
+import { useAuth } from '../services/AuthContext';
+import {
+  DOCX_MIME_TYPE,
+  PDF_MIME_TYPE,
+  exportDocumentToPdf,
+  exportDocumentToWord,
+  publishExportedDocument,
+  saveLocalRoomDocument,
+  shareExportedDocument,
+  type PublishedDocument,
+} from '../services/nativeBridge';
 import { styles } from '../styles/ChatScreen.styles';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Chat'>;
 
+const DEFAULT_TITLE = 'Nueva Consulta Académica';
+
+function getErrorMessage(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  if (typeof err === 'object' && err !== null && 'message' in err) {
+    return String((err as { message: unknown }).message);
+  }
+  return '';
+}
+
+function formatTime(createdAt: number): string {
+  return new Date(createdAt).toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+function formatResultDate(createdAt: number): string {
+  const date = new Date(createdAt);
+  return `${date.toLocaleDateString([], {
+    day: '2-digit',
+    month: 'short',
+  })}, ${formatTime(createdAt)}`;
+}
+
+let idSequence = 0;
+
+function createId(prefix: string): string {
+  idSequence += 1;
+  return `${prefix}_${Date.now().toString(36)}_${idSequence.toString(36)}`;
+}
+
+function makeConversationTitle(prompt: string, fallback: string): string {
+  if (fallback !== DEFAULT_TITLE) return fallback;
+
+  const compact = prompt.replace(/\s+/g, ' ').trim();
+  if (!compact) return fallback;
+  return compact.length > 64 ? `${compact.slice(0, 61)}...` : compact;
+}
+
+function announceExport(label: string, document: PublishedDocument): void {
+  const location = document.published
+    ? `Guardado en ${document.location}.`
+    : `Archivo generado en:\n${document.location}`;
+
+  Alert.alert(`${label} listo`, location, [
+    {
+      text: 'Compartir',
+      onPress: () => {
+        void shareExportedDocument(document.uri, document.mimeType).catch(() => {
+          Alert.alert('Error', 'No fue posible abrir el menú para compartir el archivo.');
+        });
+      },
+    },
+    { text: 'Aceptar', style: 'cancel' },
+  ]);
+}
+
 export const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
+  const { session } = useAuth();
+  const initialConversationId = route.params?.conversationId;
   const activeRole: UserProfileRole = route.params?.activeRole || 'estudiante';
   const initialDocType: DocumentType = route.params?.documentType || 'consulta_libre';
-  const docTitle = route.params?.initialTitle || 'Nueva Consulta Académica';
+  const initialTitle = route.params?.initialTitle || DEFAULT_TITLE;
 
-  const [messages, setMessages] = useState<ChatMessage[]>(MOCK_INITIAL_MESSAGES);
+  const [conversationId, setConversationId] = useState<string | undefined>(
+    initialConversationId,
+  );
+  const [docTitle, setDocTitle] = useState(initialTitle);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(
+    Boolean(initialConversationId),
+  );
+  const [historyError, setHistoryError] = useState<string | null>(null);
   const [antiClicheEnabled, setAntiClicheEnabled] = useState(true);
   const [selectedTemplate, setSelectedTemplate] = useState<DocumentType>(initialDocType);
 
   const scrollViewRef = useRef<ScrollView>(null);
+  const persistenceWarningShown = useRef(false);
+
+  useEffect(() => {
+    if (!initialConversationId) {
+      setMessages([]);
+      setIsLoadingHistory(false);
+      return undefined;
+    }
+
+    let isActive = true;
+    setMessages([]);
+    setIsLoadingHistory(true);
+    setHistoryError(null);
+
+    void loadMessages(session, initialConversationId)
+      .then((loaded) => {
+        if (!isActive) return;
+        setMessages(loaded);
+        setConversationId(initialConversationId);
+      })
+      .catch(() => {
+        if (!isActive) return;
+        setHistoryError(
+          'No se pudo cargar esta conversación. Revisa tu sesión o la conexión.',
+        );
+      })
+      .finally(() => {
+        if (isActive) setIsLoadingHistory(false);
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [initialConversationId, session]);
 
   useEffect(() => {
     scrollViewRef.current?.scrollToEnd({ animated: true });
   }, [messages, isGenerating]);
 
+  const warnPersistence = () => {
+    if (persistenceWarningShown.current) return;
+    persistenceWarningShown.current = true;
+    Alert.alert(
+      'Historial no guardado',
+      'La respuesta se generó, pero no se pudo guardar la conversación. Revisa tu sesión o la conexión.',
+    );
+  };
+
   const handleSend = () => {
     if (!inputText.trim() || isGenerating) return;
 
+    const currentInput = inputText.trim();
+    const createdAt = Date.now();
+    const activeId = conversationId ?? createId('conv');
+    const isNewConversation = !conversationId;
+    const nextTitle = isNewConversation
+      ? makeConversationTitle(currentInput, docTitle)
+      : docTitle;
+
     const userMsg: ChatMessage = {
-      id: `msg_${Date.now()}`,
+      id: createId('msg'),
       sender: 'user',
-      content: inputText.trim(),
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      content: currentInput,
+      createdAt,
+      timestamp: formatTime(createdAt),
     };
 
     setMessages((prev) => [...prev, userMsg]);
     setInputText('');
     setIsGenerating(true);
 
-    // Simulación del motor RAG + Groq (Fase 2 mock)
-    setTimeout(() => {
-      let mockAssistantResponse = '';
-      if (activeRole === 'docente') {
-        mockAssistantResponse = `**Plan Microcurricular y Guía de Evaluación:**\n\nCon base en el contenido programático institucional de la I.U. Pascual Bravo, la temática solicitada se estructura en tres momentos de aprendizaje:\n\n1. **Fase Conceptual:** Formulación del problema ingenieril y deducción analítica de variables de control.\n2. **Laboratorio Experimental:** Validación física en bancos de trabajo con instrumentos calibrados.\n3. **Criterio de Evaluación:** Rúbrica con 40% desempeño experimental, 30% rigor metodológico y 30% sustentación oral.\n\n*Nota institucional:* Esta guía se encuentra alineada con las competencias de egreso de la Facultad de Ingeniería.`;
-      } else {
-        mockAssistantResponse = `**Desarrollo Académico Fundamentado:**\n\nRevisando el pénsum y syllabus correspondiente de la I.U. Pascual Bravo, la respuesta técnica a tu consulta se desarrolla en los siguientes puntos:\n\n• **Fundamento Teórico:** Los principios matemáticos aplicados garantizan el modelado dinámico del sistema sin incurrir en aproximaciones arbitrarias.\n• **Aplicación Práctica:** En los laboratorios institucionales se implementa este procedimiento mediante protocolos estandarizados de medición.\n• **Defensa Académica:** Para sustentar este trabajo, enfócate en la relación entre los datos empíricos obtenidos y las ecuaciones de estado del modelo.\n\nEl documento cumple con los estándares exigidos para entregas académicas de la institución.`;
+    if (isNewConversation) {
+      setConversationId(activeId);
+      setDocTitle(nextTitle);
+    }
+
+    void (async () => {
+      let canPersist = true;
+
+      try {
+        if (isNewConversation) {
+          await createConversation(session, {
+            id: activeId,
+            title: nextTitle,
+            preview: currentInput.slice(0, 180),
+            documentType: selectedTemplate,
+            profile: activeRole,
+            sourcesUsed: [],
+            createdAt,
+            updatedAt: createdAt,
+          });
+        } else {
+          await updateConversation(session, activeId, {
+            documentType: selectedTemplate,
+            updatedAt: createdAt,
+          });
+        }
+        await appendMessage(session, activeId, userMsg);
+      } catch {
+        canPersist = false;
+        warnPersistence();
       }
 
-      const assistantMsg: ChatMessage = {
-        id: `msg_${Date.now() + 1}`,
-        sender: 'assistant',
-        content: mockAssistantResponse,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        sourcesUsed: ['institutional', 'web'],
-        antiClicheApplied: antiClicheEnabled,
-        documentType: selectedTemplate,
-      };
+      try {
+        const result = await apiClient.generate({
+          prompt: currentInput,
+          profile: activeRole,
+          documentType: toApiDocumentType(selectedTemplate),
+          userId: session?.uid ?? 'anonymous',
+          antiClicheEnabled,
+        });
 
-      setMessages((prev) => [...prev, assistantMsg]);
-      setIsGenerating(false);
-    }, 1200);
+        const sourcesUsed = result.sources_used.filter(
+          (source): source is 'institutional' | 'web' => source !== 'none',
+        );
+
+        const assistantCreatedAt = Date.now();
+        const assistantMsg: ChatMessage = {
+          id: createId('msg'),
+          sender: 'assistant',
+          content: result.text,
+          createdAt: assistantCreatedAt,
+          timestamp: formatTime(assistantCreatedAt),
+          sourcesUsed,
+          antiClicheApplied: antiClicheEnabled,
+          documentType: selectedTemplate,
+        };
+
+        setMessages((prev) => [...prev, assistantMsg]);
+
+        // Caché offline local (Room/SQLite) vía bridge Kotlin
+        void saveLocalRoomDocument({
+          id: assistantMsg.id,
+          title: nextTitle,
+          content: result.text,
+          documentType: selectedTemplate,
+          profile: activeRole,
+          createdAt: assistantCreatedAt,
+        });
+
+        if (canPersist) {
+          try {
+            await appendMessage(session, activeId, assistantMsg);
+            await updateConversation(session, activeId, {
+              preview: result.text.slice(0, 180),
+              documentType: selectedTemplate,
+              sourcesUsed,
+              updatedAt: assistantCreatedAt,
+            });
+          } catch {
+            warnPersistence();
+          }
+        }
+      } catch (err) {
+        const errorText = isTothApiError(err)
+          ? err.message
+          : 'Error inesperado al contactar el servidor.';
+
+        const errorCreatedAt = Date.now();
+        const errorMsg: ChatMessage = {
+          id: createId('msg'),
+          sender: 'assistant',
+          content: `⚠️ ${errorText}`,
+          createdAt: errorCreatedAt,
+          timestamp: formatTime(errorCreatedAt),
+        };
+        setMessages((prev) => [...prev, errorMsg]);
+      } finally {
+        setIsGenerating(false);
+      }
+    })();
+  };
+
+  const handleExportPdf = async (msg: ChatMessage) => {
+    try {
+      const filePath = await exportDocumentToPdf({
+        title: docTitle,
+        content: msg.content,
+      });
+      const document = await publishExportedDocument(filePath, PDF_MIME_TYPE);
+      announceExport('PDF', document);
+    } catch (err) {
+      const detail = getErrorMessage(err);
+      const suffix = detail ? `\n${detail}` : '';
+      Alert.alert(
+        'Error',
+        `No fue posible exportar el documento PDF.${suffix}`,
+      );
+    }
+  };
+
+  const handleExportDocx = async (msg: ChatMessage) => {
+    try {
+      const filePath = await exportDocumentToWord({
+        title: docTitle,
+        content: msg.content,
+      });
+      const document = await publishExportedDocument(filePath, DOCX_MIME_TYPE);
+      announceExport('Word (.docx)', document);
+    } catch (err) {
+      const detail = getErrorMessage(err);
+      const suffix = detail ? `\n${detail}` : '';
+      Alert.alert(
+        'Error',
+        `No fue posible exportar el documento Word.${suffix}`,
+      );
+    }
+  };
+
+  const handleCopy = (content: string) => {
+    Clipboard.setString(content);
+    Alert.alert('Copiado', 'Contenido copiado al portapapeles.');
   };
 
   const applyTemplate = (type: DocumentType, promptSnippet: string) => {
@@ -185,6 +442,36 @@ export const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
           contentContainerStyle={styles.chatContent}
           showsVerticalScrollIndicator={false}
         >
+          {historyError ? (
+            <View style={styles.historyError}>
+              <Text style={styles.historyErrorText}>{historyError}</Text>
+            </View>
+          ) : null}
+
+          {isLoadingHistory ? (
+            <View style={styles.historyLoading}>
+              <ActivityIndicator size="small" color={colors.primary} />
+              <Text style={styles.generatingText}>Cargando historial...</Text>
+            </View>
+          ) : null}
+
+          {!isLoadingHistory && messages.length === 0 && !historyError ? (
+            <Card style={styles.emptyChatCard}>
+              <CardHeader style={styles.emptyChatTitle}>
+                Inicia una conversación académica
+              </CardHeader>
+              <Body style={styles.emptyChatBody}>
+                Formula tu consulta y TOTH priorizará el fondo documental del Pascual
+                Bravo antes de complementar con búsqueda web.
+              </Body>
+              <MicroCopy>
+                {session
+                  ? 'Tu historial se guardará en la nube y aparecerá en el directorio.'
+                  : 'Modo invitado: el historial queda guardado en este dispositivo.'}
+              </MicroCopy>
+            </Card>
+          ) : null}
+
           {messages.map((msg) => {
             if (msg.sender === 'user') {
               return (
@@ -204,10 +491,10 @@ export const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
                   content={msg.content}
                   sourcesUsed={msg.sourcesUsed || ['institutional']}
                   antiClicheApplied={msg.antiClicheApplied ?? true}
-                  createdAt={`Hoy, ${msg.timestamp}`}
-                  onExportPdf={() => console.log('Mock: Exporting PDF')}
-                  onExportDocx={() => console.log('Mock: Exporting Word')}
-                  onCopy={() => console.log('Mock: Copied')}
+                  createdAt={formatResultDate(msg.createdAt)}
+                  onExportPdf={() => void handleExportPdf(msg)}
+                  onExportDocx={() => void handleExportDocx(msg)}
+                  onCopy={() => handleCopy(msg.content)}
                 />
               </View>
             );
@@ -255,4 +542,3 @@ export const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
     </SafeAreaView>
   );
 };
-

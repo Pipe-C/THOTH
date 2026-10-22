@@ -1,12 +1,12 @@
 // ─────────────────────────────────────────────────────────────
-// lib/controllers/healthController.ts — Controlador del health-check
+// lib/controllers/healthController.ts — health-check controller
 // ─────────────────────────────────────────────────────────────
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { ErrorCode, sendError, sendSuccess } from '../response.js';
 import { getSystemHealth } from '../services/healthService.js';
 
-/** GET /api/v1/health — reporta el estado de Supabase y Groq. */
+/** GET /api/v1/health — reports state of Supabase and Groq. */
 export async function handleHealth(
   _req: VercelRequest,
   res: VercelResponse,

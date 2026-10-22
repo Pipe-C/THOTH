@@ -39,8 +39,8 @@ capas de diseño sobre el LLM:
 | 1 | Identidad visual y componentes base | ✅ Completa |
 | 2 | Pantallas de flujo principal (mock data) | ✅ Completa |
 | 3 | Backend: Vercel + Groq + Supabase RAG | ✅ Completa |
-| 4 | Integración real frontend-backend + puente Kotlin | ⏳ Pendiente |
-| 5 | Integración y validación final | ⏳ Pendiente |
+| 4 | Integración real frontend-backend + puente Kotlin | ✅ Completa |
+| 5 | Integración y validación final | 🟡 RAG 3/3 en producción y E2E en emulador OK; falta la prueba de regeneración anti-cliché |
 
 > El detalle completo de cada fase, criterios de aceptación y decisiones de arquitectura
 > vive en el documento interno de directivas del agente (no versionado en este repo).
@@ -95,7 +95,7 @@ THOTH/
 │   │       ├── styles/         # *.styles.ts por pantalla/componente
 │   │       ├── navigation/     # Configuración de React Navigation
 │   │       ├── theme/          # Tokens de identidad visual (tokens.ts)
-│   │       ├── services/       # Datos mock (clientes Firebase/API reales en Fase 4)
+│   │       ├── services/       # Clientes reales (apiClient, authClient, firestoreClient, nativeBridge)
 │   │       └── types/          # Interfaces compartidas (User, ChatMessage...)
 │   └── backend/                # Orquestador serverless en Vercel
 │       ├── api/v1/             # Rutas (entradas serverless: health, auth, vector-search, generate)
@@ -216,6 +216,78 @@ npm run android
 > siga corriendo. Para reiniciar Metro con caché limpia: `npm run mobile -- --reset-cache`
 > (si el puerto 8081 quedó ocupado, cierra el Metro anterior primero).
 
+### Variables de entorno (mobile)
+
+`apps/mobile/babel.config.js` inyecta la configuración pública en el bundle durante el
+build. Copia `apps/mobile/.env.example` a `apps/mobile/.env` y completa:
+
+```env
+FIREBASE_API_KEY=        # Project Settings > General > Web API Key
+FIREBASE_PROJECT_ID=     # Project Settings > General > Project ID
+API_BASE_URL=https://thoth-backend.vercel.app
+```
+
+> `API_BASE_URL` es opcional; si se omite, la app usa producción. Para un backend local
+> desde el emulador Android, usa `http://10.0.2.2:3000`.
+>
+> Los valores se incrustan en el bundle: tras cambiar `.env` reinicia Metro con
+> `--reset-cache` y vuelve a compilar. `.env` está en `.gitignore`; nunca lo subas.
+
+### Historial de conversaciones
+
+Los chats autenticados se guardan en Firestore, bajo el UID de Firebase:
+
+```text
+users/{uid}/conversations/{conversationId}
+  title, preview, documentType, profile, sourcesUsed, createdAt, updatedAt
+  messages/{messageId}
+    sender, content, createdAt, sourcesUsed, antiClicheApplied, documentType
+```
+
+El directorio lista `conversations` ordenadas por `updatedAt`; al abrir una se cargan
+sus `messages`. El modo “Omitir inicio de sesión” guarda el historial localmente en
+AsyncStorage, separado de cualquier cuenta.
+
+Las reglas versionadas están en `firestore.rules` (cada usuario solo accede a
+`users/{uid}/**`) y ya están publicadas en `toth-app-ceaf6`. Para un proyecto nuevo,
+publícalas con Firebase CLI:
+
+```bash
+npx firebase-tools login
+npx firebase-tools deploy --only firestore:rules
+```
+
+### Validación (Fase 5)
+
+```bash
+# Backend: pruebas y typecheck
+cd apps/backend
+npm test                 # 100 tests
+npm run lint             # tsc --noEmit
+
+# Typecheck de la app móvil
+cd apps/mobile
+npx tsc --noEmit
+
+# Build Android (debug)
+cd apps/mobile/android
+.\gradlew.bat assembleDebug
+
+# Casos RAG contra el backend (institucional, web, mixto)
+cd apps/backend
+npm run validate:rag
+# Contra local: BASE_URL=http://localhost:3000 npm run validate:rag
+```
+
+> Las cuentas demo de Login ya están creadas en Firebase Auth:
+> `estudiante.demo@pascualbravo.edu.co` / `estudiante2026` y
+> `docente.investigador@pascualbravo.edu.co` / `docente2026`. Elige el perfil en los
+> chips **Estudiante/Docente** o usa los accesos rápidos antes de ingresar.
+>
+> Los entregables exportados desde el chat se publican en `Descargas/TOTH` (Android 10+)
+> y se pueden compartir desde el aviso de la app. En Android 9 o anterior se comparten
+> desde el almacenamiento privado de la aplicación.
+
 ---
 
 ## Flujo de datos (RAG híbrido)
@@ -250,13 +322,21 @@ repositorio**, con `lib/response.ts` como formato de respuesta único.
 | Método | Ruta | Controlador | Descripción |
 | :--- | :--- | :--- | :--- |
 | `GET` | `/api/v1/health` | `healthController` | Estado de Supabase y Groq |
-| `POST` | `/api/v1/auth/register` | `authController` | Registro institucional (`@pascualbravo.edu.co`) |
-| `POST` | `/api/v1/auth/login` | `authController` | Inicio de sesión institucional |
-| `POST` | `/api/v1/vector-search` | `vectorSearchController` | Búsqueda semántica institucional |
-| `POST` | `/api/v1/generate` | `generateController` | Orquestador RAG híbrido + generación |
+| `POST` | `/api/v1/auth/register` | `authController` | Registro en Supabase (`users`), contraseña con scrypt |
+| `POST` | `/api/v1/auth/login` | `authController` | Login contra Supabase; `idToken` aún placeholder |
+| `POST` | `/api/v1/vector-search` | `vectorSearchController` | Búsqueda semántica institucional (pública) |
+| `POST` | `/api/v1/generate` | `generateController` | Orquestador RAG híbrido + generación (público) |
 
 El mapa de rutas es `lib/routes/apiRoutes.ts`; Vercel enruta por archivo según
 `apps/backend/vercel.json`.
+
+> La app móvil autentica con **Firebase Auth**; las rutas `/api/v1/auth/*` son una
+> implementación paralela sobre la tabla `public.users` de Supabase
+> (migración `0003_create_users_table.sql`) y todavía no emiten un JWT real. Los
+> endpoints RAG no validan `Authorization`.
+>
+> Colección de Postman: `docs/TOTH_API_v1.postman_collection.json`; guía:
+> `docs/POSTMAN_GUIDE.md`.
 
 ---
 

@@ -1,5 +1,6 @@
 apply plugin: "com.android.application"
 apply plugin: "org.jetbrains.kotlin.android"
+apply plugin: "org.jetbrains.kotlin.kapt"
 apply plugin: "com.facebook.react"
 
 /**
@@ -8,14 +9,14 @@ apply plugin: "com.facebook.react"
  */
 react {
     /* Folders */
-    //   The root of your project, i.e. where "package.json" lives. Default is '../..'
-    // root = file("../../")
-    //   The folder where the react-native NPM package is. Default is ../../node_modules/react-native
-    // reactNativeDir = file("../../node_modules/react-native")
-    //   The folder where the react-native Codegen package is. Default is ../../node_modules/@react-native/codegen
-    // codegenDir = file("../../node_modules/@react-native/codegen")
-    //   The cli.js file which is the React Native CLI entrypoint. Default is ../../node_modules/react-native/cli.js
-    // cliFile = file("../../node_modules/react-native/cli.js")
+    //   Monorepo con npm workspaces: las dependencias se hoistean a la raíz
+    //   (THOTH/node_modules), no a apps/mobile/node_modules.
+    // root = file("../../") es el default correcto (donde vive apps/mobile/package.json)
+    reactNativeDir = file("../../../../node_modules/react-native")
+    //   The folder where the react-native Codegen package is.
+    codegenDir = file("../../../../node_modules/@react-native/codegen")
+    //   The cli.js file which is the React Native CLI entrypoint.
+    cliFile = file("../../../../node_modules/react-native/cli.js")
 
     /* Variants */
     //   The list of variants to that are debuggable. For those we're going to
@@ -44,15 +45,14 @@ react {
     // extraPackagerArgs = []
 
     /* Hermes Commands */
-    //   The hermes compiler command to run. By default it is 'hermesc'
-    // hermesCommand = "$rootDir/my-custom-hermesc/bin/hermesc"
+    //   hermesc está hoisteado a la raíz del monorepo, no en apps/mobile.
+    hermesCommand = file("../../../../node_modules/react-native/sdks/hermesc/%OS-BIN%/hermesc").absolutePath
     //
     //   The list of flags to pass to the Hermes compiler. By default is "-O", "-output-source-map"
     // hermesFlags = ["-O", "-output-source-map"]
 
     /* Autolinking */
     autolinkLibrariesWithApp()
-    root = file("../../../../")
 }
 
 /**
@@ -112,9 +112,17 @@ dependencies {
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
 
+    // Room: caché local de entregables académicos (SQLite)
+    implementation("androidx.room:room-runtime:2.6.1")
+    kapt("androidx.room:room-compiler:2.6.1")
+
     if (hermesEnabled.toBoolean()) {
         implementation("com.facebook.react:hermes-android")
     } else {
         implementation jscFlavor
     }
+}
+
+kapt {
+    correctErrorTypes = true
 }
