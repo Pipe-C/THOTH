@@ -126,3 +126,5 @@ export interface DocumentHistoryItem {
   sourcesUsed: SourceType[];
   createdAt: number;
 }
+
+export * from './navigation';

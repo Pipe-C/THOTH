@@ -95,7 +95,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
-// ─── Hook ─────────────────────────────────────────────────────
 
 /**
  * Returns the current auth context.
