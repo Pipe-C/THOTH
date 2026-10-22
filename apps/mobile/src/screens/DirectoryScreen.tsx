@@ -11,15 +11,14 @@ import {
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useFocusEffect } from '@react-navigation/native';
 import { RootStackParamList } from '../navigation/types';
-import { Display, Subtitle, CardHeader, Body, MicroCopy } from '../components/Typography';
+import { CardHeader, MicroCopy } from '../components/Typography';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { Badge } from '../components/Badge';
-import { MOCK_DIRECTORY_ITEMS, MOCK_CURRENT_USER } from '../services/mockData';
-import { getUserDocuments } from '../services/firestoreClient';
+import { loadConversations } from '../services/chatRepository';
 import { useAuth } from '../services/AuthContext';
 import { colors } from '../theme/tokens';
-import { DocumentHistoryItem, DocumentType, UserProfileRole } from '../types';
+import { ConversationSummary, DocumentType, UserProfileRole } from '../types';
 import { styles } from '../styles/DirectoryScreen.styles';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Directory'>;
@@ -27,27 +26,38 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Directory'>;
 export const DirectoryScreen: React.FC<Props> = ({ navigation, route }) => {
   const { session } = useAuth();
   const [activeRole, setActiveRole] = useState<UserProfileRole>(
-    route.params?.activeRole || session?.profile || 'estudiante'
+    route.params?.activeRole || session?.profile || 'estudiante',
   );
   const [selectedFilter, setSelectedFilter] = useState<'all' | DocumentType>('all');
-  // Start with mock items while real data loads
-  const [items, setItems] = useState<DocumentHistoryItem[]>(MOCK_DIRECTORY_ITEMS);
-  const [isLoadingDocs, setIsLoadingDocs] = useState(false);
+  const [items, setItems] = useState<ConversationSummary[]>([]);
+  const [isLoadingDocs, setIsLoadingDocs] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
-  // Reload Firestore history every time the screen regains focus so a
-  // document generated in ChatScreen appears immediately.
+  // Reload history every time the screen regains focus so a conversation
+  // generated in ChatScreen appears immediately.
   useFocusEffect(
     useCallback(() => {
-      if (!session) return undefined;
-
       let isActive = true;
       setIsLoadingDocs(true);
+      setLoadError(null);
 
-      void getUserDocuments(session.uid, session.idToken).then((docs) => {
-        if (!isActive) return;
-        if (docs.length > 0) setItems(docs);
-        setIsLoadingDocs(false);
-      });
+      void loadConversations(session)
+        .then((conversations) => {
+          if (!isActive) return;
+          setItems(conversations);
+        })
+        .catch(() => {
+          if (!isActive) return;
+          setItems([]);
+          setLoadError(
+            session
+              ? 'No se pudo cargar el historial desde Firestore.'
+              : 'No se pudo leer el historial local de este dispositivo.',
+          );
+        })
+        .finally(() => {
+          if (isActive) setIsLoadingDocs(false);
+        });
 
       return () => {
         isActive = false;
@@ -76,16 +86,16 @@ export const DirectoryScreen: React.FC<Props> = ({ navigation, route }) => {
     }
   };
 
-  const handleOpenDoc = (item: DocumentHistoryItem) => {
+  const handleOpenConversation = (item: ConversationSummary) => {
     navigation.navigate('Chat', {
-      docId: item.id,
+      conversationId: item.id,
       documentType: item.documentType,
       activeRole: item.profile,
       initialTitle: item.title,
     });
   };
 
-  const displayEmail = session?.email ?? MOCK_CURRENT_USER.email;
+  const displayEmail = session?.email ?? 'Invitado · historial local';
 
   const handleNewChat = () => {
     navigation.navigate('Chat', {
@@ -147,7 +157,7 @@ export const DirectoryScreen: React.FC<Props> = ({ navigation, route }) => {
                   selectedFilter === 'all' && styles.filterChipTextActive,
                 ]}
               >
-                Todos ({items.length})
+                Todas ({items.length})
               </Text>
             </TouchableOpacity>
 
@@ -221,33 +231,42 @@ export const DirectoryScreen: React.FC<Props> = ({ navigation, route }) => {
           </ScrollView>
         </View>
 
-        {/* Listado de Documentos del Directorio */}
+        {/* Listado de Conversaciones del Directorio */}
         <FlatList
           data={filteredItems}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
-            isLoadingDocs ? (
-              <Card style={styles.emptyCard}>
-                <ActivityIndicator color={colors.primary} size="small" />
-                <MicroCopy style={styles.emptySubtitle}>
-                  Cargando documentos desde Firestore...
-                </MicroCopy>
-              </Card>
-            ) : (
-              <Card style={styles.emptyCard}>
-                <CardHeader style={styles.emptyTitle}>No hay documentos en esta categoría</CardHeader>
-                <MicroCopy style={styles.emptySubtitle}>
-                  Crea una nueva consulta para generar entregables con RAG institucional.
-                </MicroCopy>
-              </Card>
-            )
+            <Card style={styles.emptyCard}>
+              {isLoadingDocs ? (
+                <>
+                  <ActivityIndicator color={colors.primary} size="small" />
+                  <MicroCopy style={styles.emptySubtitle}>
+                    Cargando historial de conversaciones...
+                  </MicroCopy>
+                </>
+              ) : (
+                <>
+                  <CardHeader style={styles.emptyTitle}>
+                    {loadError
+                      ? 'No se pudo cargar el historial'
+                      : 'Aún no hay conversaciones en esta categoría'}
+                  </CardHeader>
+                  <MicroCopy style={styles.emptySubtitle}>
+                    {loadError ??
+                      (session
+                        ? 'Crea una nueva consulta para guardar el primer historial.'
+                        : 'Crea una nueva consulta; en modo invitado se guardará en este dispositivo.')}
+                  </MicroCopy>
+                </>
+              )}
+            </Card>
           }
           renderItem={({ item }) => (
             <TouchableOpacity
               activeOpacity={0.85}
-              onPress={() => handleOpenDoc(item)}
+              onPress={() => handleOpenConversation(item)}
               style={styles.docItemCard}
             >
               <View style={styles.docHeader}>
@@ -286,4 +305,3 @@ export const DirectoryScreen: React.FC<Props> = ({ navigation, route }) => {
     </SafeAreaView>
   );
 };
-

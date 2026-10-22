@@ -8,7 +8,7 @@ export type RootStackParamList = {
   RoleSelect: { currentRole?: UserProfileRole } | undefined;
   Directory: { activeRole?: UserProfileRole } | undefined;
   Chat: {
-    docId?: string;
+    conversationId?: string;
     documentType?: DocumentType;
     activeRole?: UserProfileRole;
     initialTitle?: string;

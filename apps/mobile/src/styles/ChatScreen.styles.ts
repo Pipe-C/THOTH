@@ -127,6 +127,38 @@ export const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.regular,
     color: colors.textSecondary,
   },
+  historyLoading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 16,
+    paddingHorizontal: 4,
+  },
+  historyError: {
+    backgroundColor: colors.errorBg,
+    borderWidth: 1,
+    borderColor: colors.errorBorder,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
+  },
+  historyErrorText: {
+    fontSize: 12,
+    lineHeight: 18,
+    fontFamily: typography.fontFamily.medium,
+    color: colors.errorText,
+  },
+  emptyChatCard: {
+    paddingVertical: 24,
+    paddingHorizontal: 16,
+    marginBottom: 16,
+  },
+  emptyChatTitle: {
+    marginBottom: 6,
+  },
+  emptyChatBody: {
+    marginBottom: 8,
+  },
   inputBar: {
     backgroundColor: colors.surface,
     borderTopWidth: 1,
