@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
+import Clipboard from '@react-native-clipboard/clipboard';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { Display, Subtitle, CardHeader, Body, MicroCopy } from '../components/Typography';
@@ -26,13 +27,44 @@ import { apiClient, isTothApiError } from '../services/apiClient';
 import { saveUserDocument } from '../services/firestoreClient';
 import { useAuth } from '../services/AuthContext';
 import {
+  DOCX_MIME_TYPE,
+  PDF_MIME_TYPE,
   exportDocumentToPdf,
   exportDocumentToWord,
+  publishExportedDocument,
   saveLocalRoomDocument,
+  shareExportedDocument,
+  type PublishedDocument,
 } from '../services/nativeBridge';
 import { styles } from '../styles/ChatScreen.styles';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Chat'>;
+
+function getErrorMessage(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  if (typeof err === 'object' && err !== null && 'message' in err) {
+    return String((err as { message: unknown }).message);
+  }
+  return '';
+}
+
+function announceExport(label: string, document: PublishedDocument): void {
+  const location = document.published
+    ? `Guardado en ${document.location}.`
+    : `Archivo generado en:\n${document.location}`;
+
+  Alert.alert(`${label} listo`, location, [
+    {
+      text: 'Compartir',
+      onPress: () => {
+        void shareExportedDocument(document.uri, document.mimeType).catch(() => {
+          Alert.alert('Error', 'No fue posible abrir el menú para compartir el archivo.');
+        });
+      },
+    },
+    { text: 'Aceptar', style: 'cancel' },
+  ]);
+}
 
 export const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
   const { session } = useAuth();
@@ -137,34 +169,41 @@ export const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
 
   const handleExportPdf = async (msg: ChatMessage) => {
     try {
-      const path = await exportDocumentToPdf({
+      const filePath = await exportDocumentToPdf({
         title: docTitle,
         content: msg.content,
       });
+      const document = await publishExportedDocument(filePath, PDF_MIME_TYPE);
+      announceExport('PDF', document);
+    } catch (err) {
+      const detail = getErrorMessage(err);
       Alert.alert(
-        'Exportación PDF',
-        `Documento generado con éxito vía Kotlin bridge.\nArchivo: ${path}`,
-        [{ text: 'Aceptar' }],
+        'Error',
+        `No fue posible exportar el documento PDF.${detail ? `\n${detail}` : ''}`,
       );
-    } catch {
-      Alert.alert('Error', 'No fue posible exportar el documento PDF.');
     }
   };
 
   const handleExportDocx = async (msg: ChatMessage) => {
     try {
-      const path = await exportDocumentToWord({
+      const filePath = await exportDocumentToWord({
         title: docTitle,
         content: msg.content,
       });
+      const document = await publishExportedDocument(filePath, DOCX_MIME_TYPE);
+      announceExport('Word (.docx)', document);
+    } catch (err) {
+      const detail = getErrorMessage(err);
       Alert.alert(
-        'Exportación Word',
-        `Documento Word generado con éxito vía Kotlin bridge.\nArchivo: ${path}`,
-        [{ text: 'Aceptar' }],
+        'Error',
+        `No fue posible exportar el documento Word.${detail ? `\n${detail}` : ''}`,
       );
-    } catch {
-      Alert.alert('Error', 'No fue posible exportar el documento Word.');
     }
+  };
+
+  const handleCopy = (content: string) => {
+    Clipboard.setString(content);
+    Alert.alert('Copiado', 'Contenido copiado al portapapeles.');
   };
 
   const applyTemplate = (type: DocumentType, promptSnippet: string) => {
@@ -294,9 +333,7 @@ export const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
                   createdAt={`Hoy, ${msg.timestamp}`}
                   onExportPdf={() => void handleExportPdf(msg)}
                   onExportDocx={() => void handleExportDocx(msg)}
-                  onCopy={() => {
-                    Alert.alert('Copiado', 'Contenido copiado al portapapeles.');
-                  }}
+                  onCopy={() => handleCopy(msg.content)}
                 />
               </View>
             );

@@ -15,6 +15,21 @@ export interface ExportDocumentOptions {
   content: string;
 }
 
+export interface PublishedDocument {
+  fileName: string;
+  filePath: string;
+  uri: string;
+  mimeType: string;
+  /** true cuando el archivo quedó visible en Descargas/TOTH. */
+  published: boolean;
+  /** Ruta legible para mostrar al usuario. */
+  location: string;
+}
+
+export const PDF_MIME_TYPE = 'application/pdf';
+export const DOCX_MIME_TYPE =
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
 export interface LocalRoomDocument {
   id?: string;
   title: string;
@@ -54,6 +69,39 @@ export async function exportDocumentToWord(
   const safeTitle = (options.title || 'Documento_TOTH').replace(/\s+/g, '_');
   const mockPath = `/data/user/0/com.toth.app/cache/${safeTitle}_${Date.now()}.docx`;
   return Promise.resolve(mockPath);
+}
+
+/**
+ * Copies the exported file to the public Downloads/TOTH folder and returns a
+ * shareable content:// URI. On Android versions without MediaStore.Downloads
+ * it returns a FileProvider URI for the app-private file.
+ */
+export async function publishExportedDocument(
+  filePath: string,
+  mimeType: string,
+): Promise<PublishedDocument> {
+  if (Platform.OS === 'android' && PdfExporterModule?.publishToDownloads) {
+    return PdfExporterModule.publishToDownloads(filePath, mimeType);
+  }
+
+  return {
+    fileName: filePath.split(/[\\/]/).pop() ?? 'Documento_TOTH',
+    filePath,
+    uri: filePath,
+    mimeType,
+    published: false,
+    location: filePath,
+  };
+}
+
+/** Opens the Android sharesheet for an exported document. */
+export async function shareExportedDocument(
+  uri: string,
+  mimeType: string,
+): Promise<void> {
+  if (Platform.OS === 'android' && PdfExporterModule?.shareFile) {
+    await PdfExporterModule.shareFile(uri, mimeType);
+  }
 }
 
 /**
