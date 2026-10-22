@@ -249,7 +249,8 @@ sus `messages`. El modo “Omitir inicio de sesión” guarda el historial local
 AsyncStorage, separado de cualquier cuenta.
 
 Las reglas versionadas están en `firestore.rules` (cada usuario solo accede a
-`users/{uid}/**`). Publícalas una vez con Firebase CLI:
+`users/{uid}/**`) y ya están publicadas en `toth-app-ceaf6`. Para un proyecto nuevo,
+publícalas con Firebase CLI:
 
 ```bash
 npx firebase-tools login
@@ -278,8 +279,10 @@ npm run validate:rag
 # Contra local: BASE_URL=http://localhost:3000 npm run validate:rag
 ```
 
-> Las cuentas demo de la pantalla de Login (`estudiante.demo@...`) deben existir en
-> Firebase Auth; si no, el formulario muestra "Las credenciales son incorrectas".
+> Las cuentas demo de Login ya están creadas en Firebase Auth:
+> `estudiante.demo@pascualbravo.edu.co` / `estudiante2026` y
+> `docente.investigador@pascualbravo.edu.co` / `docente2026`. Elige el perfil en los
+> chips **Estudiante/Docente** o usa los accesos rápidos antes de ingresar.
 >
 > Los entregables exportados desde el chat se publican en `Descargas/TOTH` (Android 10+)
 > y se pueden compartir desde el aviso de la app. En Android 9 o anterior se comparten
@@ -319,13 +322,21 @@ repositorio**, con `lib/response.ts` como formato de respuesta único.
 | Método | Ruta | Controlador | Descripción |
 | :--- | :--- | :--- | :--- |
 | `GET` | `/api/v1/health` | `healthController` | Estado de Supabase y Groq |
-| `POST` | `/api/v1/auth/register` | `authController` | Registro institucional (`@pascualbravo.edu.co`) |
-| `POST` | `/api/v1/auth/login` | `authController` | Inicio de sesión institucional |
-| `POST` | `/api/v1/vector-search` | `vectorSearchController` | Búsqueda semántica institucional |
-| `POST` | `/api/v1/generate` | `generateController` | Orquestador RAG híbrido + generación |
+| `POST` | `/api/v1/auth/register` | `authController` | Registro en Supabase (`users`), contraseña con scrypt |
+| `POST` | `/api/v1/auth/login` | `authController` | Login contra Supabase; `idToken` aún placeholder |
+| `POST` | `/api/v1/vector-search` | `vectorSearchController` | Búsqueda semántica institucional (pública) |
+| `POST` | `/api/v1/generate` | `generateController` | Orquestador RAG híbrido + generación (público) |
 
 El mapa de rutas es `lib/routes/apiRoutes.ts`; Vercel enruta por archivo según
 `apps/backend/vercel.json`.
+
+> La app móvil autentica con **Firebase Auth**; las rutas `/api/v1/auth/*` son una
+> implementación paralela sobre la tabla `public.users` de Supabase
+> (migración `0003_create_users_table.sql`) y todavía no emiten un JWT real. Los
+> endpoints RAG no validan `Authorization`.
+>
+> Colección de Postman: `docs/TOTH_API_v1.postman_collection.json`; guía:
+> `docs/POSTMAN_GUIDE.md`.
 
 ---
 
