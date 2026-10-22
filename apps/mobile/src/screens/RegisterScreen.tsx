@@ -26,7 +26,7 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [selectedProfile, setSelectedProfile] = useState<'estudiante' | 'docente'>('estudiante');
+  const selectedProfile = 'estudiante' as const;
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 

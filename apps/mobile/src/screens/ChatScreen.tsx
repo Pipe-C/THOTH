@@ -68,8 +68,11 @@ function formatResultDate(createdAt: number): string {
   })}, ${formatTime(createdAt)}`;
 }
 
+let idSequence = 0;
+
 function createId(prefix: string): string {
-  return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+  idSequence += 1;
+  return `${prefix}_${Date.now().toString(36)}_${idSequence.toString(36)}`;
 }
 
 function makeConversationTitle(prompt: string, fallback: string): string {
@@ -303,9 +306,10 @@ export const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
       announceExport('PDF', document);
     } catch (err) {
       const detail = getErrorMessage(err);
+      const suffix = detail ? `\n${detail}` : '';
       Alert.alert(
         'Error',
-        `No fue posible exportar el documento PDF.${detail ? `\n${detail}` : ''}`,
+        `No fue posible exportar el documento PDF.${suffix}`,
       );
     }
   };
@@ -320,9 +324,10 @@ export const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
       announceExport('Word (.docx)', document);
     } catch (err) {
       const detail = getErrorMessage(err);
+      const suffix = detail ? `\n${detail}` : '';
       Alert.alert(
         'Error',
-        `No fue posible exportar el documento Word.${detail ? `\n${detail}` : ''}`,
+        `No fue posible exportar el documento Word.${suffix}`,
       );
     }
   };

@@ -23,11 +23,121 @@ import { styles } from '../styles/DirectoryScreen.styles';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Directory'>;
 
+const DOC_FILTERS: ReadonlyArray<{
+  value: 'all' | DocumentType;
+  label: string;
+}> = [
+  { value: 'all', label: 'Todas' },
+  { value: 'informe_laboratorio', label: 'Laboratorios' },
+  { value: 'guia_clase', label: 'Guías de Clase' },
+  { value: 'ensayo', label: 'Ensayos' },
+  { value: 'articulo_investigacion', label: 'Artículos' },
+];
+
+function getDocTypeLabel(type: DocumentType): string {
+  switch (type) {
+    case 'informe_laboratorio':
+      return 'Informe Lab';
+    case 'guia_clase':
+      return 'Guía Docente';
+    case 'ensayo':
+      return 'Ensayo';
+    case 'articulo_investigacion':
+      return 'Artículo';
+    case 'consulta_libre':
+    default:
+      return 'Consulta';
+  }
+}
+
+interface EmptyHistoryProps {
+  isLoading: boolean;
+  error: string | null;
+  isGuest: boolean;
+}
+
+function EmptyHistory({
+  isLoading,
+  error,
+  isGuest,
+}: Readonly<EmptyHistoryProps>) {
+  if (isLoading) {
+    return (
+      <Card style={styles.emptyCard}>
+        <ActivityIndicator color={colors.primary} size="small" />
+        <MicroCopy style={styles.emptySubtitle}>
+          Cargando historial de conversaciones...
+        </MicroCopy>
+      </Card>
+    );
+  }
+
+  const title = error
+    ? 'No se pudo cargar el historial'
+    : 'Aún no hay conversaciones en esta categoría';
+  const defaultMessage = isGuest
+    ? 'Crea una nueva consulta; en modo invitado se guardará en este dispositivo.'
+    : 'Crea una nueva consulta para guardar el primer historial.';
+
+  return (
+    <Card style={styles.emptyCard}>
+      <CardHeader style={styles.emptyTitle}>{title}</CardHeader>
+      <MicroCopy style={styles.emptySubtitle}>
+        {error ?? defaultMessage}
+      </MicroCopy>
+    </Card>
+  );
+}
+
+interface ConversationCardProps {
+  item: ConversationSummary;
+  onOpen: (item: ConversationSummary) => void;
+}
+
+function ConversationCard({
+  item,
+  onOpen,
+}: Readonly<ConversationCardProps>) {
+  return (
+    <TouchableOpacity
+      activeOpacity={0.85}
+      onPress={() => onOpen(item)}
+      style={styles.docItemCard}
+    >
+      <View style={styles.docHeader}>
+        <Badge label={getDocTypeLabel(item.documentType)} variant="accent" />
+        <View style={styles.ragBadges}>
+          {item.sourcesUsed.includes('institutional') && (
+            <Badge label="RAG Pascual Bravo" variant="institutional" />
+          )}
+          {item.sourcesUsed.includes('web') && (
+            <Badge label="Web Grounding" variant="web" />
+          )}
+        </View>
+      </View>
+
+      <Text style={styles.docTitle} numberOfLines={2}>
+        {item.title}
+      </Text>
+
+      <Text style={styles.docPreview} numberOfLines={2}>
+        {item.preview}
+      </Text>
+
+      <View style={styles.docFooter}>
+        <MicroCopy>
+          Perfil: {item.profile === 'estudiante' ? 'Estudiante' : 'Docente'}
+        </MicroCopy>
+        <Text style={styles.openHint}>Abrir conversación →</Text>
+      </View>
+    </TouchableOpacity>
+  );
+}
+
 export const DirectoryScreen: React.FC<Props> = ({ navigation, route }) => {
   const { session } = useAuth();
-  const [activeRole, setActiveRole] = useState<UserProfileRole>(
-    route.params?.activeRole || session?.profile || 'estudiante',
-  );
+  const activeRole: UserProfileRole =
+    route.params?.activeRole || session?.profile || 'estudiante';
   const [selectedFilter, setSelectedFilter] = useState<'all' | DocumentType>('all');
   const [items, setItems] = useState<ConversationSummary[]>([]);
   const [isLoadingDocs, setIsLoadingDocs] = useState(true);
@@ -69,22 +179,6 @@ export const DirectoryScreen: React.FC<Props> = ({ navigation, route }) => {
     if (selectedFilter === 'all') return true;
     return item.documentType === selectedFilter;
   });
-
-  const getDocTypeLabel = (type: DocumentType): string => {
-    switch (type) {
-      case 'informe_laboratorio':
-        return 'Informe Lab';
-      case 'guia_clase':
-        return 'Guía Docente';
-      case 'ensayo':
-        return 'Ensayo';
-      case 'articulo_investigacion':
-        return 'Artículo';
-      case 'consulta_libre':
-      default:
-        return 'Consulta';
-    }
-  };
 
   const handleOpenConversation = (item: ConversationSummary) => {
     navigation.navigate('Chat', {
@@ -144,90 +238,30 @@ export const DirectoryScreen: React.FC<Props> = ({ navigation, route }) => {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.filterScroll}
           >
-            <TouchableOpacity
-              onPress={() => setSelectedFilter('all')}
-              style={[
-                styles.filterChip,
-                selectedFilter === 'all' && styles.filterChipActive,
-              ]}
-            >
-              <Text
-                style={[
-                  styles.filterChipText,
-                  selectedFilter === 'all' && styles.filterChipTextActive,
-                ]}
-              >
-                Todas ({items.length})
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => setSelectedFilter('informe_laboratorio')}
-              style={[
-                styles.filterChip,
-                selectedFilter === 'informe_laboratorio' && styles.filterChipActive,
-              ]}
-            >
-              <Text
-                style={[
-                  styles.filterChipText,
-                  selectedFilter === 'informe_laboratorio' && styles.filterChipTextActive,
-                ]}
-              >
-                Laboratorios
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => setSelectedFilter('guia_clase')}
-              style={[
-                styles.filterChip,
-                selectedFilter === 'guia_clase' && styles.filterChipActive,
-              ]}
-            >
-              <Text
-                style={[
-                  styles.filterChipText,
-                  selectedFilter === 'guia_clase' && styles.filterChipTextActive,
-                ]}
-              >
-                Guías de Clase
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => setSelectedFilter('ensayo')}
-              style={[
-                styles.filterChip,
-                selectedFilter === 'ensayo' && styles.filterChipActive,
-              ]}
-            >
-              <Text
-                style={[
-                  styles.filterChipText,
-                  selectedFilter === 'ensayo' && styles.filterChipTextActive,
-                ]}
-              >
-                Ensayos
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => setSelectedFilter('articulo_investigacion')}
-              style={[
-                styles.filterChip,
-                selectedFilter === 'articulo_investigacion' && styles.filterChipActive,
-              ]}
-            >
-              <Text
-                style={[
-                  styles.filterChipText,
-                  selectedFilter === 'articulo_investigacion' && styles.filterChipTextActive,
-                ]}
-              >
-                Artículos
-              </Text>
-            </TouchableOpacity>
+            {DOC_FILTERS.map((filter) => {
+              const isActive = selectedFilter === filter.value;
+              return (
+                <TouchableOpacity
+                  key={filter.value}
+                  onPress={() => setSelectedFilter(filter.value)}
+                  style={[
+                    styles.filterChip,
+                    isActive && styles.filterChipActive,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.filterChipText,
+                      isActive && styles.filterChipTextActive,
+                    ]}
+                  >
+                    {filter.value === 'all'
+                      ? `${filter.label} (${items.length})`
+                      : filter.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </ScrollView>
         </View>
 
@@ -238,67 +272,14 @@ export const DirectoryScreen: React.FC<Props> = ({ navigation, route }) => {
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
-            <Card style={styles.emptyCard}>
-              {isLoadingDocs ? (
-                <>
-                  <ActivityIndicator color={colors.primary} size="small" />
-                  <MicroCopy style={styles.emptySubtitle}>
-                    Cargando historial de conversaciones...
-                  </MicroCopy>
-                </>
-              ) : (
-                <>
-                  <CardHeader style={styles.emptyTitle}>
-                    {loadError
-                      ? 'No se pudo cargar el historial'
-                      : 'Aún no hay conversaciones en esta categoría'}
-                  </CardHeader>
-                  <MicroCopy style={styles.emptySubtitle}>
-                    {loadError ??
-                      (session
-                        ? 'Crea una nueva consulta para guardar el primer historial.'
-                        : 'Crea una nueva consulta; en modo invitado se guardará en este dispositivo.')}
-                  </MicroCopy>
-                </>
-              )}
-            </Card>
+            <EmptyHistory
+              isLoading={isLoadingDocs}
+              error={loadError}
+              isGuest={!session}
+            />
           }
           renderItem={({ item }) => (
-            <TouchableOpacity
-              activeOpacity={0.85}
-              onPress={() => handleOpenConversation(item)}
-              style={styles.docItemCard}
-            >
-              <View style={styles.docHeader}>
-                <Badge
-                  label={getDocTypeLabel(item.documentType)}
-                  variant="accent"
-                />
-                <View style={styles.ragBadges}>
-                  {item.sourcesUsed.includes('institutional') && (
-                    <Badge label="RAG Pascual Bravo" variant="institutional" />
-                  )}
-                  {item.sourcesUsed.includes('web') && (
-                    <Badge label="Web Grounding" variant="web" />
-                  )}
-                </View>
-              </View>
-
-              <Text style={styles.docTitle} numberOfLines={2}>
-                {item.title}
-              </Text>
-
-              <Text style={styles.docPreview} numberOfLines={2}>
-                {item.preview}
-              </Text>
-
-              <View style={styles.docFooter}>
-                <MicroCopy>
-                  Perfil: {item.profile === 'estudiante' ? 'Estudiante' : 'Docente'}
-                </MicroCopy>
-                <Text style={styles.openHint}>Abrir conversación →</Text>
-              </View>
-            </TouchableOpacity>
+            <ConversationCard item={item} onOpen={handleOpenConversation} />
           )}
         />
       </View>

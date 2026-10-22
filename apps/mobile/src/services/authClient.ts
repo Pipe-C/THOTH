@@ -39,20 +39,20 @@ export interface AuthSession {
   profile: UserProfileRole;
 }
 
-export interface AuthError {
-  code: string;
-  message: string;
+export class AuthError extends Error {
+  readonly code: string;
+
+  constructor(code: string, message: string) {
+    super(message);
+    this.name = 'AuthError';
+    this.code = code;
+  }
 }
 
 // ─── Helpers ──────────────────────────────────────────────────
 
-function isAuthError(err: unknown): err is AuthError {
-  return (
-    typeof err === 'object' &&
-    err !== null &&
-    'code' in err &&
-    'message' in err
-  );
+export function isAuthError(err: unknown): err is AuthError {
+  return err instanceof AuthError;
 }
 
 /**
@@ -90,10 +90,7 @@ async function firebasePost<T>(
   body: Record<string, unknown>,
 ): Promise<T> {
   if (!FIREBASE_CONFIG.isConfigured) {
-    throw {
-      code: 'FIREBASE_NOT_CONFIGURED',
-      message: FIREBASE_CONFIG_ERROR,
-    } as AuthError;
+    throw new AuthError('FIREBASE_NOT_CONFIGURED', FIREBASE_CONFIG_ERROR);
   }
 
   const url = `${AUTH_BASE}/${endpoint}?key=${FIREBASE_API_KEY}`;
@@ -106,21 +103,19 @@ async function firebasePost<T>(
       body: JSON.stringify({ ...body, returnSecureToken: true }),
     });
   } catch {
-    throw {
-      code: 'NETWORK_ERROR',
-      message: 'No se pudo conectar con Firebase. Verifica tu conexion.',
-    } as AuthError;
+    throw new AuthError(
+      'NETWORK_ERROR',
+      'No se pudo conectar con Firebase. Verifica tu conexion.',
+    );
   }
 
   const data = (await response.json()) as Record<string, unknown>;
 
   if (!response.ok) {
     const err = (data['error'] as Record<string, unknown> | undefined) ?? {};
-    const code = String(err['message'] ?? 'AUTH_ERROR');
-    throw {
-      code,
-      message: translateFirebaseError(code),
-    } as AuthError;
+    const rawMessage = err['message'];
+    const code = typeof rawMessage === 'string' ? rawMessage : 'AUTH_ERROR';
+    throw new AuthError(code, translateFirebaseError(code));
   }
 
   return data as T;
@@ -172,10 +167,10 @@ const ALLOWED_DOMAIN = 'pascualbravo.edu.co';
 
 function assertInstitutionalEmail(email: string): void {
   if (!email.trim().toLowerCase().endsWith(`@${ALLOWED_DOMAIN}`)) {
-    throw {
-      code: 'INVALID_DOMAIN',
-      message: `Solo se permiten correos @${ALLOWED_DOMAIN}.`,
-    } as AuthError;
+    throw new AuthError(
+      'INVALID_DOMAIN',
+      `Solo se permiten correos @${ALLOWED_DOMAIN}.`,
+    );
   }
 }
 
@@ -233,5 +228,3 @@ export async function signIn(
   await persistSession(session);
   return session;
 }
-
-export { isAuthError };

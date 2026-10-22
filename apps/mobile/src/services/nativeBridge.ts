@@ -53,7 +53,7 @@ export async function exportDocumentToPdf(
   // Graceful fallback for non-native / test environments
   const safeTitle = (options.title || 'Documento_TOTH').replace(/\s+/g, '_');
   const mockPath = `/data/user/0/com.toth.app/cache/${safeTitle}_${Date.now()}.pdf`;
-  return Promise.resolve(mockPath);
+  return mockPath;
 }
 
 /**
@@ -68,7 +68,7 @@ export async function exportDocumentToWord(
 
   const safeTitle = (options.title || 'Documento_TOTH').replace(/\s+/g, '_');
   const mockPath = `/data/user/0/com.toth.app/cache/${safeTitle}_${Date.now()}.docx`;
-  return Promise.resolve(mockPath);
+  return mockPath;
 }
 
 /**
@@ -113,7 +113,7 @@ export async function saveLocalRoomDocument(
   if (Platform.OS === 'android' && RoomDatabaseModule?.saveDocument) {
     return RoomDatabaseModule.saveDocument(doc);
   }
-  return Promise.resolve(doc.id || String(Date.now()));
+  return doc.id || String(Date.now());
 }
 
 /**
@@ -125,5 +125,5 @@ export async function getLocalRoomHistory(
   if (Platform.OS === 'android' && RoomDatabaseModule?.getHistory) {
     return RoomDatabaseModule.getHistory(limit);
   }
-  return Promise.resolve([]);
+  return [];
 }

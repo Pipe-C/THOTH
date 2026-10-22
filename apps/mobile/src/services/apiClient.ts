@@ -18,9 +18,16 @@ declare const process: {
 const DEFAULT_BACKEND_URL = 'https://thoth-backend.vercel.app';
 const REQUEST_TIMEOUT_MS = 45_000;
 
-const BACKEND_URL = (process.env.API_BASE_URL || DEFAULT_BACKEND_URL).replace(
-  /\/+$/,
-  '',
+function trimTrailingSlashes(value: string): string {
+  let end = value.length;
+  while (end > 0 && value[end - 1] === '/') {
+    end -= 1;
+  }
+  return value.slice(0, end);
+}
+
+const BACKEND_URL = trimTrailingSlashes(
+  process.env.API_BASE_URL || DEFAULT_BACKEND_URL,
 );
 
 export interface TothApiError {
@@ -59,9 +66,13 @@ function toApiError(
   return { status, code, message };
 }
 
+type RequestOptions = Omit<RequestInit, 'headers'> & {
+  headers?: Record<string, string>;
+};
+
 async function request<T>(
   path: string,
-  options: RequestInit,
+  options: RequestOptions,
 ): Promise<T> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
@@ -73,7 +84,7 @@ async function request<T>(
       signal: controller.signal,
       headers: {
         'Content-Type': 'application/json',
-        ...(options.headers ?? {}),
+        ...options.headers,
       },
     });
   } catch (err) {

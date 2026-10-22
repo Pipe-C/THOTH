@@ -8,7 +8,9 @@
 
 import React, {
   createContext,
+  useCallback,
   useContext,
+  useMemo,
   useState,
   useEffect,
   type ReactNode,
@@ -18,9 +20,7 @@ import {
   signUp,
   clearSession,
   getStoredSession,
-  isAuthError,
   type AuthSession,
-  type AuthError,
 } from './authClient';
 import type { UserProfileRole } from '../types';
 
@@ -52,7 +52,9 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 // ─── Provider ─────────────────────────────────────────────────
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function AuthProvider({
+  children,
+}: Readonly<{ children: ReactNode }>) {
   const [session, setSession] = useState<AuthSession | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -64,37 +66,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const login = async (
-    email: string,
-    password: string,
-    profile: UserProfileRole = 'estudiante',
-  ): Promise<AuthSession> => {
-    const newSession = await signIn(email, password, profile);
-    setSession(newSession);
-    return newSession;
-  };
+  const login = useCallback(
+    async (
+      email: string,
+      password: string,
+      profile: UserProfileRole = 'estudiante',
+    ): Promise<AuthSession> => {
+      const newSession = await signIn(email, password, profile);
+      setSession(newSession);
+      return newSession;
+    },
+    [],
+  );
 
-  const register = async (
-    email: string,
-    password: string,
-    displayName: string,
-    profile: UserProfileRole,
-  ): Promise<AuthSession> => {
-    const newSession = await signUp(email, password, displayName, profile);
-    setSession(newSession);
-    return newSession;
-  };
+  const register = useCallback(
+    async (
+      email: string,
+      password: string,
+      displayName: string,
+      profile: UserProfileRole,
+    ): Promise<AuthSession> => {
+      const newSession = await signUp(email, password, displayName, profile);
+      setSession(newSession);
+      return newSession;
+    },
+    [],
+  );
 
-  const logout = async (): Promise<void> => {
+  const logout = useCallback(async (): Promise<void> => {
     await clearSession();
     setSession(null);
-  };
+  }, []);
 
-  return (
-    <AuthContext.Provider value={{ session, isLoading, login, register, logout }}>
-      {children}
-    </AuthContext.Provider>
+  const value = useMemo(
+    () => ({ session, isLoading, login, register, logout }),
+    [session, isLoading, login, register, logout],
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 // ─── Hook ─────────────────────────────────────────────────────
@@ -111,5 +120,6 @@ export function useAuth(): AuthContextValue {
   return ctx;
 }
 
-export { isAuthError };
-export type { AuthSession, AuthError };
+export { isAuthError } from './authClient';
+export type { AuthError } from './authClient';
+export type { AuthSession };
