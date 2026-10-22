@@ -92,6 +92,8 @@ El monorepo (`apps/mobile`, `apps/backend`) usa npm workspaces. Rama de trabajo:
   apareció en el directorio, se reabrió con ambos mensajes y sobrevivió a un reinicio de
   la app. El contrato Firestore se validó contra el proyecto real con un usuario temporal
   (PATCH conversación, PATCH mensaje, `runQuery` ordenado y limpieza posterior).
+- Reglas Firestore publicadas (2026-10-22) en `toth-app-ceaf6`:
+  `firebase deploy --only firestore:rules` → compiladas y liberadas correctamente.
 - Producción (2026-10-22): se añadió `SIMILARITY_THRESHOLD=0.85` a Vercel y se desplegó
   `thoth-backend` (`dpl_6Uip6uFWDRKdo5SLAEULhfgqZQ25`). `npm run validate:rag`:
   **3/3 casos OK** (institucional, web, mixto). `/api/v1/health` → `healthy`.
@@ -105,8 +107,8 @@ El monorepo (`apps/mobile`, `apps/backend`) usa npm workspaces. Rama de trabajo:
    desde `users/{uid}` en Firestore.
 3. Verificar el caso de regeneración anti-cliché con una respuesta que contenga
    muletillas (hoy se validó el badge y el envío del toggle).
-4. Publicar `firestore.rules` en el proyecto `toth-app-ceaf6` y validar el historial
-   autenticado en un dispositivo con una cuenta real.
+4. Validar el historial autenticado en un dispositivo con una cuenta real (las reglas
+   ya están publicadas en `toth-app-ceaf6`).
 5. Rotar la Supabase Secret key expuesta previamente y actualizarla en Vercel y `.env`.
 
 ## 5. Commits realizados (por capas)
