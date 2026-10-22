@@ -25,6 +25,9 @@ El monorepo (`apps/mobile`, `apps/backend`) usa npm workspaces. Rama de trabajo:
 - Tests nuevos para el toggle: **100 tests pasan**; `tsc --noEmit` OK.
 - Script `npm run validate:rag` (`scripts/validate-rag.mjs`): valida los tres casos
   (institucional, web, mixto) y detecta clichés.
+- Auth v1 en Supabase (merge del PR #27): tabla `public.users` vía migración
+  `0003_create_users_table.sql`, hash scrypt e `idToken` aún placeholder. Producción
+  sigue sirviendo el auth mock hasta el deploy de `main`.
 
 ### Mobile
 
@@ -100,13 +103,19 @@ El monorepo (`apps/mobile`, `apps/backend`) usa npm workspaces. Rama de trabajo:
 - Producción (2026-10-22): se añadió `SIMILARITY_THRESHOLD=0.85` a Vercel y se desplegó
   `thoth-backend` (`dpl_6Uip6uFWDRKdo5SLAEULhfgqZQ25`). `npm run validate:rag`:
   **3/3 casos OK** (institucional, web, mixto). `/api/v1/health` → `healthy`.
+- SonarCloud (2026-10-22): tras los commits `7b76af7` y `4a48ec2`, el Quality Gate de
+  `develop` quedó **OK** (`new_security_rating` 1, `new_maintainability_rating` 1,
+  cobertura nueva 84.0 %, 100 tests backend).
 
 ## 4. Pendientes
 
-1. Verificar el caso de regeneración anti-cliché con una respuesta que contenga
+1. Abrir y mergear el PR `develop` → `main`. Antes del merge, aplicar la migración
+   `0003_create_users_table.sql` en Supabase y verificar `/auth/register` +
+   `/auth/login` tras el deploy.
+2. Verificar el caso de regeneración anti-cliché con una respuesta que contenga
    muletillas (hoy se validó el badge y el envío del toggle).
-2. Rotar la Supabase Secret key expuesta previamente y actualizarla en Vercel y `.env`.
-3. Evaluar refresh de `idToken` para sesiones largas (hoy se guarda el token de la
+3. Rotar la Supabase Secret key expuesta previamente y actualizarla en Vercel y `.env`.
+4. Evaluar refresh de `idToken` para sesiones largas (hoy se guarda el token de la
    sesión inicial).
 
 ## 5. Commits realizados (por capas)
@@ -123,6 +132,8 @@ El monorepo (`apps/mobile`, `apps/backend`) usa npm workspaces. Rama de trabajo:
 10. `fix(firebase): corrige la sintaxis de las reglas de Firestore`
 11. `docs: registra la publicación de las reglas de Firestore`
 12. `fix(auth): conserva el perfil elegido al iniciar sesión`
+13. `fix(backend): simplifica la validación de credenciales`
+14. `fix(mobile): resuelve hallazgos de seguridad y complejidad de Sonar`
 
 > No se hace `git push` sin confirmación explícita.
 
