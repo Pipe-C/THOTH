@@ -257,6 +257,10 @@ npm run validate:rag
 
 > Las cuentas demo de la pantalla de Login (`estudiante.demo@...`) deben existir en
 > Firebase Auth; si no, el formulario muestra "Las credenciales son incorrectas".
+>
+> Los entregables exportados desde el chat se publican en `Descargas/TOTH` (Android 10+)
+> y se pueden compartir desde el aviso de la app. En Android 9 o anterior se comparten
+> desde el almacenamiento privado de la aplicación.
 
 ---
 

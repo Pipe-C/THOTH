@@ -53,6 +53,12 @@ El monorepo (`apps/mobile`, `apps/backend`) usa npm workspaces. Rama de trabajo:
   `RoomDatabaseModule.kt` implementa `saveDocument`, `getHistory` y `deleteDocument`.
 - `PdfExporterModule.kt`: PDF con paginación (`StaticLayout`), título y pie; DOCX OOXML
   mínimo (ZIP) válido. Salida en `getExternalFilesDir(DIRECTORY_DOCUMENTS)/TOTH`.
+- Exportaciones visibles: `publishToDownloads` publica una copia en `Descargas/TOTH`
+  vía `MediaStore.Downloads` (API 29+), devuelve un `content://` URI y abre la hoja de
+  compartir con `FileProvider`. En API < 29 se comparte el archivo privado con
+  `FileProvider` (sin copia pública).
+- Portapapeles real con `@react-native-clipboard/clipboard` (el handler anterior solo
+  mostraba el aviso, sin copiar).
 
 ## 3. Validación ejecutada
 
@@ -72,6 +78,10 @@ El monorepo (`apps/mobile`, `apps/backend`) usa npm workspaces. Rama de trabajo:
 - Firebase Auth: la pantalla de Login devuelve “Las credenciales son incorrectas” con
   las cuentas demo, lo que confirma que Firebase está configurado y alcanzable (esas
   cuentas no existen en el proyecto).
+- Exportaciones revalidadas (2026-10-22): DOCX y PDF aparecen en
+  `/sdcard/Download/TOTH` con nombres acentuados; DOCX con 4 entradas OOXML válidas y
+  PDF `%PDF-1.4`; la hoja “Compartir” abre con el archivo adjunto y “Copiar” deja el
+  texto en el portapapeles (`text/plain`).
 - Producción (2026-10-22): se añadió `SIMILARITY_THRESHOLD=0.85` a Vercel y se desplegó
   `thoth-backend` (`dpl_6Uip6uFWDRKdo5SLAEULhfgqZQ25`). `npm run validate:rag`:
   **3/3 casos OK** (institucional, web, mixto). `/api/v1/health` → `healthy`.
