@@ -98,6 +98,25 @@ describe('Groq Client Helper', () => {
       expect(res.sourcesUsed).toEqual(['none']);
     });
 
+    it('omite el negative prompt cuando antiClicheEnabled es false', async () => {
+      mockCreate.mockResolvedValue({
+        choices: [{ message: { content: 'Respuesta sin filtro.' } }],
+      });
+
+      await generateContent({
+        prompt: 'Pregunta',
+        profile: 'estudiante',
+        documentType: 'ensayo',
+        institutionalContext: '',
+        webContext: '',
+        antiClicheEnabled: false,
+      });
+
+      const systemMessage = mockCreate.mock.calls[0][0].messages[0].content;
+      expect(systemMessage).not.toContain('PROHIBIDO usar las siguientes muletillas');
+      expect(systemMessage).toContain('PERFIL ACTIVO: ESTUDIANTE');
+    });
+
     it('debe arrojar error si el modelo devuelve una respuesta vacía', async () => {
       mockCreate.mockResolvedValue({
         choices: [{ message: { content: '' } }],

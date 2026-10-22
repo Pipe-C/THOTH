@@ -30,6 +30,11 @@ export interface GenerationQualityResult {
 export async function generateWithQualityFilter(
   params: GenerationQualityParams,
 ): Promise<GenerationQualityResult> {
+  if (params.antiClicheEnabled === false) {
+    const result = await complete(params);
+    return { text: result.text, regenerated: false };
+  }
+
   let generatedText = '';
   let regenerated = false;
   let currentPrompt = params.prompt;

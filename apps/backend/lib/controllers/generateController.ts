@@ -142,8 +142,15 @@ export async function handleGenerate(
     return;
   }
 
-  const { prompt, profile, documentType, userId, wordCount, subject } =
-    validation.data!;
+  const {
+    prompt,
+    profile,
+    documentType,
+    userId,
+    wordCount,
+    subject,
+    antiClicheEnabled,
+  } = validation.data!;
 
   const startTime = Date.now();
 
@@ -159,6 +166,7 @@ export async function handleGenerate(
       webContext,
       wordCount,
       subject,
+      antiClicheEnabled,
     });
 
     sendSuccess(res, {
