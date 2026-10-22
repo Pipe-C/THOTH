@@ -8,12 +8,12 @@
 | Fase | Estado |
 | :--- | :--- |
 | 0–4 (scaffold, UI, backend, integración + Kotlin) | ✅ Completas |
-| 5 (validación final) | 🟡 En curso: E2E en emulador validado; falta desplegar el umbral 0.85 y validar el caso web |
+| 5 (validación final) | 🟡 RAG 3/3 en producción y E2E en emulador OK; falta la prueba de regeneración anti-cliché |
 
 El monorepo (`apps/mobile`, `apps/backend`) usa npm workspaces. Rama de trabajo:
 `develop`. Backend desplegado en `https://thoth-backend.vercel.app`.
 
-## 2. Cambios de esta sesión (sin commitear todavía)
+## 2. Cambios de esta sesión
 
 ### Backend
 
@@ -72,32 +72,33 @@ El monorepo (`apps/mobile`, `apps/backend`) usa npm workspaces. Rama de trabajo:
 - Firebase Auth: la pantalla de Login devuelve “Las credenciales son incorrectas” con
   las cuentas demo, lo que confirma que Firebase está configurado y alcanzable (esas
   cuentas no existen en el proyecto).
+- Producción (2026-10-22): se añadió `SIMILARITY_THRESHOLD=0.85` a Vercel y se desplegó
+  `thoth-backend` (`dpl_6Uip6uFWDRKdo5SLAEULhfgqZQ25`). `npm run validate:rag`:
+  **3/3 casos OK** (institucional, web, mixto). `/api/v1/health` → `healthy`.
 
 ## 4. Pendientes
 
-1. **Desplegar el umbral 0.85**: si Vercel tiene `SIMILARITY_THRESHOLD=0.75` como
-   variable de entorno, el nuevo default no aplica. Actualizarla y desplegar (requiere
-   confirmación explícita). Después ejecutar `npm run validate:rag` contra producción:
-   el caso “noticias tecnológicas” debe devolver solo `web`.
-2. Crear las cuentas demo en Firebase Auth o usar el flujo de registro real.
+1. Crear las cuentas demo en Firebase Auth o usar el flujo de registro real.
+2. Corregir el perfil en el login real: `signIn` usa `estudiante` como fallback y el
+   acceso rápido Docente entra como estudiante. Mientras tanto, para la demo Docente
+   usar “Omitir inicio de sesión” → elegir Docente, o implementar la lectura del perfil
+   desde `users/{uid}` en Firestore.
 3. Verificar el caso de regeneración anti-cliché con una respuesta que contenga
    muletillas (hoy se validó el badge y el envío del toggle).
-4. Commitear los cambios por capas (ver sección 5) y actualizar la memoria del agente.
+4. Actualizar la memoria del agente con el estado final.
 5. Rotar la Supabase Secret key expuesta previamente y actualizarla en Vercel y `.env`.
 
-## 5. Commits previstos (por capas)
+## 5. Commits realizados (por capas)
 
-1. `fix(backend): sube el umbral RAG a 0.85` (supabase, .env.example)
-2. `feat(backend): respeta el toggle anti-cliché` (types, controlador, servicio, Groq,
-   tests)
-3. `feat(backend): añade script de validación RAG` (script + package.json)
-4. `fix(mobile): inyecta la config de Firebase desde .env` (babel, firebase, authClient,
-   .env.example)
-5. `fix(mobile): alinea apiClient con el contrato v1` (apiClient, types, ChatScreen)
-6. `feat(mobile): persiste historial y refresca el directorio` (Chat, Directory)
-7. `build(android): corrige rutas del monorepo y añade Room` (build.gradle)
-8. `feat(android): implementa Room y exportación PDF/Word` (Kotlin)
-9. `docs: actualiza estado y guía de validación`
+1. `fix(rag): sube el umbral de similitud a 0.85`
+2. `feat(backend): respeta el toggle anti-cliché en la generación`
+3. `feat(backend): añade script de validación del RAG híbrido`
+4. `fix(mobile): inyecta la configuración de Firebase desde .env`
+5. `fix(mobile): alinea apiClient con el contrato v1 del backend`
+6. `feat(mobile): persiste el historial y refresca el directorio`
+7. `build(android): corrige rutas del monorepo y añade Room`
+8. `feat(android): implementa Room y exportación PDF/Word reales`
+9. `docs: actualiza estado del proyecto y guía de validación`
 
 > No se hace `git push` sin confirmación explícita.
 

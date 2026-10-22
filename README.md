@@ -40,7 +40,7 @@ capas de diseño sobre el LLM:
 | 2 | Pantallas de flujo principal (mock data) | ✅ Completa |
 | 3 | Backend: Vercel + Groq + Supabase RAG | ✅ Completa |
 | 4 | Integración real frontend-backend + puente Kotlin | ✅ Completa |
-| 5 | Integración y validación final | 🟡 En curso (E2E en emulador OK; falta desplegar el umbral 0.85 y validar el caso web) |
+| 5 | Integración y validación final | 🟡 RAG 3/3 en producción y E2E en emulador OK; falta la prueba de regeneración anti-cliché |
 
 > El detalle completo de cada fase, criterios de aceptación y decisiones de arquitectura
 > vive en el documento interno de directivas del agente (no versionado en este repo).
