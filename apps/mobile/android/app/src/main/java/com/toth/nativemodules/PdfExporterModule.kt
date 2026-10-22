@@ -1,21 +1,33 @@
 package com.toth.nativemodules
 
+import android.content.ClipData
+import android.content.ContentValues
+import android.content.Intent
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.pdf.PdfDocument
+import android.net.Uri
+import android.os.Build
 import android.os.Environment
+import android.provider.MediaStore
 import android.text.Layout
 import android.text.StaticLayout
 import android.text.TextPaint
 import android.text.TextUtils
+import android.util.Log
+import androidx.annotation.RequiresApi
+import androidx.core.content.FileProvider
+import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
 import com.facebook.react.bridge.ReadableMap
+import com.facebook.react.bridge.WritableMap
 import java.io.BufferedOutputStream
 import java.io.File
 import java.io.FileOutputStream
+import java.io.IOException
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
@@ -26,6 +38,10 @@ import java.util.zip.ZipOutputStream
  */
 class PdfExporterModule(reactContext: ReactApplicationContext) :
     ReactContextBaseJavaModule(reactContext) {
+
+    private companion object {
+        const val TAG = "PdfExporterModule"
+    }
 
     override fun getName(): String = "PdfExporterModule"
 
@@ -57,6 +73,118 @@ class PdfExporterModule(reactContext: ReactApplicationContext) :
         }
     }
 
+    /**
+     * Publica una exportación en la carpeta pública Descargas/TOTH para que sea
+     * visible desde el administrador de archivos. En Android 10+ usa MediaStore,
+     * que no requiere permisos de almacenamiento. Devuelve un content:// URI
+     * listo para compartir.
+     */
+    @ReactMethod
+    fun publishToDownloads(filePath: String, mimeType: String, promise: Promise) {
+        try {
+            val file = File(filePath)
+            if (!file.exists() || !file.isFile) {
+                throw IOException("El archivo exportado no existe: $filePath")
+            }
+
+            val publishedUri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                publishWithMediaStore(file, mimeType)
+            } else {
+                null
+            }
+
+            val shareUri = publishedUri ?: fileProviderUri(file)
+            val result = Arguments.createMap().apply {
+                putString("fileName", file.name)
+                putString("filePath", file.absolutePath)
+                putString("uri", shareUri.toString())
+                putString("mimeType", mimeType)
+                putBoolean("published", publishedUri != null)
+                putString(
+                    "location",
+                    if (publishedUri != null) {
+                        "${Environment.DIRECTORY_DOWNLOADS}/TOTH/${file.name}"
+                    } else {
+                        file.absolutePath
+                    },
+                )
+            }
+            promise.resolve(result)
+        } catch (e: Exception) {
+            promise.reject("ERR_PUBLISH_EXPORT", e.localizedMessage, e)
+        }
+    }
+
+    /** Abre la hoja de compartir de Android con el archivo exportado. */
+    @ReactMethod
+    fun shareFile(uriString: String, mimeType: String, promise: Promise) {
+        try {
+            val uri = Uri.parse(uriString)
+            val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                type = mimeType
+                putExtra(Intent.EXTRA_STREAM, uri)
+                clipData = ClipData.newUri(
+                    reactApplicationContext.contentResolver,
+                    "Documento TOTH",
+                    uri,
+                )
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            val chooser = Intent.createChooser(shareIntent, "Compartir documento")
+
+            val activity = reactApplicationContext.currentActivity
+            if (activity != null) {
+                activity.startActivity(chooser)
+            } else {
+                chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                reactApplicationContext.startActivity(chooser)
+            }
+            promise.resolve(true)
+        } catch (e: Exception) {
+            promise.reject("ERR_SHARE_FILE", e.localizedMessage, e)
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.Q)
+    private fun publishWithMediaStore(file: File, mimeType: String): Uri? {
+        val resolver = reactApplicationContext.contentResolver
+        val values = ContentValues().apply {
+            put(MediaStore.Downloads.DISPLAY_NAME, file.name)
+            put(MediaStore.Downloads.MIME_TYPE, mimeType)
+            put(
+                MediaStore.Downloads.RELATIVE_PATH,
+                "${Environment.DIRECTORY_DOWNLOADS}/TOTH",
+            )
+            put(MediaStore.Downloads.IS_PENDING, 1)
+        }
+
+        val collection = MediaStore.Downloads.EXTERNAL_CONTENT_URI
+        val uri = resolver.insert(collection, values) ?: return null
+
+        return try {
+            val output = resolver.openOutputStream(uri)
+                ?: throw IOException("No se pudo abrir el destino en Descargas.")
+            output.use { target ->
+                file.inputStream().use { source -> source.copyTo(target) }
+            }
+
+            values.clear()
+            values.put(MediaStore.Downloads.IS_PENDING, 0)
+            resolver.update(uri, values, null, null)
+            uri
+        } catch (e: Exception) {
+            Log.w(TAG, "No fue posible publicar en Descargas; se usará el archivo local.", e)
+            resolver.delete(uri, null, null)
+            null
+        }
+    }
+
+    private fun fileProviderUri(file: File): Uri = FileProvider.getUriForFile(
+        reactApplicationContext,
+        "${reactApplicationContext.packageName}.fileprovider",
+        file,
+    )
+
     private fun buildOutputFile(title: String, extension: String): File {
         val baseDir = reactApplicationContext.getExternalFilesDir(
             Environment.DIRECTORY_DOCUMENTS,
@@ -68,8 +196,9 @@ class PdfExporterModule(reactContext: ReactApplicationContext) :
 
         val safeTitle = title
             .trim()
-            .replace(Regex("[^A-Za-z0-9_-]+"), "_")
-            .trim('_')
+            .replace(Regex("""[\\/:*?"<>|\u0000-\u001F]"""), "_")
+            .replace(Regex("""\s+"""), "_")
+            .trim('_', ' ', '.')
             .take(60)
             .ifBlank { "Documento_TOTH" }
 
@@ -250,13 +379,28 @@ class PdfExporterModule(reactContext: ReactApplicationContext) :
         zip.closeEntry()
     }
 
-    private fun escapeXml(value: String): String =
-        value
-            .replace("&", "&amp;")
-            .replace("<", "&lt;")
-            .replace(">", "&gt;")
-            .replace("\"", "&quot;")
-            .replace("'", "&apos;")
+    private fun escapeXml(value: String): String {
+        val out = StringBuilder(value.length + 16)
+        var index = 0
+        while (index < value.length) {
+            val codePoint = value.codePointAt(index)
+            when {
+                codePoint == 0x26 -> out.append("&amp;")
+                codePoint == 0x3C -> out.append("&lt;")
+                codePoint == 0x3E -> out.append("&gt;")
+                codePoint == 0x22 -> out.append("&quot;")
+                codePoint == 0x27 -> out.append("&apos;")
+                codePoint == 0x09 || codePoint == 0x0A || codePoint == 0x0D ->
+                    out.appendCodePoint(codePoint)
+                // Caracteres de control inválidos en XML 1.0 y surrogates sueltos.
+                codePoint < 0x20 || codePoint in 0xD800..0xDFFF ||
+                    codePoint == 0xFFFE || codePoint == 0xFFFF -> Unit
+                else -> out.appendCodePoint(codePoint)
+            }
+            index += Character.charCount(codePoint)
+        }
+        return out.toString()
+    }
 
     private fun ReadableMap.optionalString(key: String): String =
         if (hasKey(key) && !isNull(key)) getString(key).orEmpty() else ""
