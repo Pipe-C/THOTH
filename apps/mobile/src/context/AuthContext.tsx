@@ -10,6 +10,7 @@ import React, {
   createContext,
   useContext,
   useState,
+  ReactNode,
   useEffect,
   type ReactNode,
 } from 'react';
@@ -95,6 +96,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
+export function useAuth() {
+  const context = useContext(AuthContext);
 
 /**
  * Returns the current auth context.

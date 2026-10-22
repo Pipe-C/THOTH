@@ -9,7 +9,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../navigation/types';
+import { MainStackParamList } from '../types/navigation';
 import { Display, Subtitle, CardHeader, Body, MicroCopy } from '../components/Typography';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
@@ -20,8 +20,9 @@ import { useAuth } from '../services/AuthContext';
 import { colors } from '../theme/tokens';
 import { DocumentHistoryItem, DocumentType, UserProfileRole } from '../types';
 import { styles } from '../styles/DirectoryScreen.styles';
+import { useAuth } from "../context/AuthContext";
 
-type Props = NativeStackScreenProps<RootStackParamList, 'Directory'>;
+type Props = NativeStackScreenProps<MainStackParamList, 'Directory'>;
 
 export const DirectoryScreen: React.FC<Props> = ({ navigation, route }) => {
   const { session } = useAuth();
@@ -92,7 +93,7 @@ export const DirectoryScreen: React.FC<Props> = ({ navigation, route }) => {
         <View style={styles.header}>
           <View style={styles.headerTop}>
             <View>
-              <Text style={styles.appTitle}>TOTH</Text>
+              <Display style={styles.appTitle}>TOTH</Display>
               <MicroCopy style={styles.userEmail}>{displayEmail}</MicroCopy>
             </View>
             <TouchableOpacity
@@ -100,9 +101,9 @@ export const DirectoryScreen: React.FC<Props> = ({ navigation, route }) => {
               onPress={() => navigation.navigate('RoleSelect', { currentRole: activeRole })}
               style={styles.profileBadge}
             >
-              <Text style={styles.profileBadgeText}>
+              <Body style={styles.profileBadgeText}>
                 Rol: {activeRole === 'estudiante' ? 'Estudiante' : 'Docente'} ▾
-              </Text>
+              </Body>
             </TouchableOpacity>
           </View>
 
@@ -118,7 +119,7 @@ export const DirectoryScreen: React.FC<Props> = ({ navigation, route }) => {
           </View>
         </View>
 
-        {/* Barra de Filtros por Tipo de Documento */}
+        {/* Document Type Filter Bar */}
         <View style={styles.filterBar}>
           <ScrollView
             horizontal
@@ -212,7 +213,7 @@ export const DirectoryScreen: React.FC<Props> = ({ navigation, route }) => {
           </ScrollView>
         </View>
 
-        {/* Listado de Documentos del Directorio */}
+        {/* Directory Document List */}
         <FlatList
           data={filteredItems}
           keyExtractor={(item) => item.id}
@@ -277,4 +278,3 @@ export const DirectoryScreen: React.FC<Props> = ({ navigation, route }) => {
     </SafeAreaView>
   );
 };
-
