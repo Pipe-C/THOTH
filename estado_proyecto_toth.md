@@ -38,9 +38,15 @@ El monorepo (`apps/mobile`, `apps/backend`) usa npm workspaces. Rama de trabajo:
   sobre de respuesta `ok` y errores tipados; `vectorSearch` tipado como `{ results, meta }`.
 - `src/services/authClient.ts`: guard `FIREBASE_NOT_CONFIGURED` y traducción de errores
   `API_KEY_INVALID` / `CONFIGURATION_NOT_FOUND`.
-- `ChatScreen`: envía `antiClicheEnabled`, filtra fuentes `'none'`, guarda en Room y en
-  Firestore (`saveUserDocument`) cuando hay sesión.
-- `DirectoryScreen`: recarga el historial con `useFocusEffect` al volver a la pantalla.
+- `ChatScreen`: envía `antiClicheEnabled`, filtra fuentes `'none'`, guarda el turno
+  completo en `users/{uid}/conversations/{id}/messages` y mantiene la caché Room.
+  Carga el historial al abrir una conversación y muestra estados de carga/error.
+- `DirectoryScreen`: lista las conversaciones reales (Firestore o AsyncStorage en modo
+  invitado) y las recarga con `useFocusEffect` al volver desde el chat.
+- `chatRepository`: fachada que elige Firestore para sesiones autenticadas y
+  AsyncStorage para el modo invitado (`guestChatStore`).
+- Reglas versionadas: `firestore.rules`, `firebase.json`, `.firebaserc`. Cada usuario
+  solo puede leer/escribir `users/{uid}/**`.
 - `.env.example`: añade `API_BASE_URL`.
 
 ### Android / Kotlin
@@ -82,6 +88,10 @@ El monorepo (`apps/mobile`, `apps/backend`) usa npm workspaces. Rama de trabajo:
   `/sdcard/Download/TOTH` con nombres acentuados; DOCX con 4 entradas OOXML válidas y
   PDF `%PDF-1.4`; la hoja “Compartir” abre con el archivo adjunto y “Copiar” deja el
   texto en el portapapeles (`text/plain`).
+- Historial de chats validado (2026-10-22): en modo invitado se creó una conversación,
+  apareció en el directorio, se reabrió con ambos mensajes y sobrevivió a un reinicio de
+  la app. El contrato Firestore se validó contra el proyecto real con un usuario temporal
+  (PATCH conversación, PATCH mensaje, `runQuery` ordenado y limpieza posterior).
 - Producción (2026-10-22): se añadió `SIMILARITY_THRESHOLD=0.85` a Vercel y se desplegó
   `thoth-backend` (`dpl_6Uip6uFWDRKdo5SLAEULhfgqZQ25`). `npm run validate:rag`:
   **3/3 casos OK** (institucional, web, mixto). `/api/v1/health` → `healthy`.
@@ -95,7 +105,8 @@ El monorepo (`apps/mobile`, `apps/backend`) usa npm workspaces. Rama de trabajo:
    desde `users/{uid}` en Firestore.
 3. Verificar el caso de regeneración anti-cliché con una respuesta que contenga
    muletillas (hoy se validó el badge y el envío del toggle).
-4. Actualizar la memoria del agente con el estado final.
+4. Publicar `firestore.rules` en el proyecto `toth-app-ceaf6` y validar el historial
+   autenticado en un dispositivo con una cuenta real.
 5. Rotar la Supabase Secret key expuesta previamente y actualizarla en Vercel y `.env`.
 
 ## 5. Commits realizados (por capas)

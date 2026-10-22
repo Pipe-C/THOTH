@@ -233,6 +233,29 @@ API_BASE_URL=https://thoth-backend.vercel.app
 > Los valores se incrustan en el bundle: tras cambiar `.env` reinicia Metro con
 > `--reset-cache` y vuelve a compilar. `.env` está en `.gitignore`; nunca lo subas.
 
+### Historial de conversaciones
+
+Los chats autenticados se guardan en Firestore, bajo el UID de Firebase:
+
+```text
+users/{uid}/conversations/{conversationId}
+  title, preview, documentType, profile, sourcesUsed, createdAt, updatedAt
+  messages/{messageId}
+    sender, content, createdAt, sourcesUsed, antiClicheApplied, documentType
+```
+
+El directorio lista `conversations` ordenadas por `updatedAt`; al abrir una se cargan
+sus `messages`. El modo “Omitir inicio de sesión” guarda el historial localmente en
+AsyncStorage, separado de cualquier cuenta.
+
+Las reglas versionadas están en `firestore.rules` (cada usuario solo accede a
+`users/{uid}/**`). Publícalas una vez con Firebase CLI:
+
+```bash
+npx firebase-tools login
+npx firebase-tools deploy --only firestore:rules
+```
+
 ### Validación (Fase 5)
 
 ```bash
