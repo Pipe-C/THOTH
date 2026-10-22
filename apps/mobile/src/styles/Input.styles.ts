@@ -37,7 +37,11 @@ export const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.textPrimary,
     fontFamily: typography.fontFamily.regular,
+    borderRadius: radii.input,
+    borderWidth: 1.5,
+    borderColor: colors.border,
     padding: 0,
+    height: 40
   },
   iconContainer: {
     marginRight: 8,
