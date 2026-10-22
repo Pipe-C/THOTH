@@ -35,6 +35,7 @@ interface AuthContextValue {
   login: (
     email: string,
     password: string,
+    profile?: UserProfileRole,
   ) => Promise<AuthSession>;
   /** Registers a new institutional user and signs them in */
   register: (
@@ -66,8 +67,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (
     email: string,
     password: string,
+    profile: UserProfileRole = 'estudiante',
   ): Promise<AuthSession> => {
-    const newSession = await signIn(email, password);
+    const newSession = await signIn(email, password, profile);
     setSession(newSession);
     return newSession;
   };

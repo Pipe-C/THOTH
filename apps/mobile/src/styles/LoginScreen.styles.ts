@@ -50,8 +50,37 @@ export const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: typography.fontFamily.medium,
   },
+  roleLabel: {
+    marginTop: 14,
+    marginBottom: 8,
+  },
+  roleRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  roleChip: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  roleChipActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  roleChipText: {
+    color: colors.textPrimary,
+    fontSize: 13,
+    fontFamily: typography.fontFamily.medium,
+  },
+  roleChipTextActive: {
+    color: colors.surface,
+  },
   submitButton: {
-    marginTop: 6,
+    marginTop: 14,
   },
   skipButton: {
     marginTop: 12,
