@@ -9,16 +9,15 @@ import {
   Platform,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../navigation/types';
-import { Display, Title, CardHeader, Body, MicroCopy } from '../components/Typography';
+import { AuthStackParamList } from '../types/navigation';
+import { Display, Subtitle, CardHeader, Body, MicroCopy } from '../components/Typography';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { Badge } from '../components/Badge';
-import { useAuth, isAuthError } from '../services/AuthContext';
 import { styles } from '../styles/RegisterScreen.styles';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'Register'>;
+type Props = NativeStackScreenProps<AuthStackParamList, 'Register'>;
 
 export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
   const { register } = useAuth();
@@ -26,14 +25,13 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const selectedProfile = 'estudiante' as const;
+  const [selectedProfile, setSelectedProfile] = useState<'estudiante' | 'docente'>('estudiante');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const isEmailValidInstitutional = email.trim().toLowerCase().endsWith('@pascualbravo.edu.co');
 
   const handleRegister = () => {
-    if (isLoading) return;
     setError(null);
     if (!fullName.trim()) {
       setError('Por favor ingresa tu nombre completo.');
@@ -44,15 +42,15 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
       return;
     }
     if (!isEmailValidInstitutional) {
-      setError('El registro está restringido a correos institucionales @pascualbravo.edu.co');
+      setError('El registro esta restringido a correos institucionales @pascualbravo.edu.co');
       return;
     }
     if (password.length < 6) {
-      setError('La contraseña debe tener al menos 6 caracteres.');
+      setError('La contrasena debe tener al menos 6 caracteres.');
       return;
     }
     if (password !== confirmPassword) {
-      setError('Las contraseñas no coinciden.');
+      setError('Las contrasenas no coinciden.');
       return;
     }
 
@@ -82,25 +80,23 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
-          {/* Header Identitario */}
+          {/* Identity Header */}
           <View style={styles.header}>
             <View style={styles.brandRow}>
               <Display>TOTH</Display>
               <Badge label="I.U. Pascual Bravo" variant="institutional" />
             </View>
-            <Title style={styles.subtitle}>Crea tu cuenta</Title>
+            <Subtitle style={styles.subtitle}>Registro Institucional</Subtitle>
             <Body style={styles.headerDescription}>
-              Usa tu correo del Pascual Bravo para acceder al fondo documental institucional.
+              Crea tu cuenta académica para acceder al modelo RAG con fondos documentales de la institución.
             </Body>
           </View>
 
-          {/* Formulario de Registro */}
+          {/* Register Formulary */}
           <Card style={styles.card}>
-            <CardHeader style={styles.cardTitle}>Datos de la cuenta</CardHeader>
-            <MicroCopy style={styles.formHint}>
-              El registro solo acepta correos @pascualbravo.edu.co
-            </MicroCopy>
+            <CardHeader style={styles.cardTitle}>Datos del Usuario</CardHeader>
 
             {error ? (
               <View style={styles.errorBanner}>
@@ -114,9 +110,6 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
               value={fullName}
               onChangeText={setFullName}
               autoCapitalize="words"
-              autoComplete="name"
-              textContentType="name"
-              returnKeyType="next"
             />
 
             <Input
@@ -126,9 +119,6 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
               onChangeText={setEmail}
               keyboardType="email-address"
               autoCapitalize="none"
-              autoComplete="email"
-              textContentType="emailAddress"
-              returnKeyType="next"
               helperText={
                 email.length > 0 && !isEmailValidInstitutional
                   ? 'Debe terminar en @pascualbravo.edu.co'
@@ -142,22 +132,14 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
               value={password}
               onChangeText={setPassword}
               secureTextEntry
-              autoComplete="new-password"
-              textContentType="newPassword"
-              returnKeyType="next"
-              helperText="Mínimo 6 caracteres"
             />
 
             <Input
-              label="Confirmar contraseña"
+              label="Confirmar Contraseña"
               placeholder="••••••••"
               value={confirmPassword}
               onChangeText={setConfirmPassword}
               secureTextEntry
-              autoComplete="new-password"
-              textContentType="newPassword"
-              returnKeyType="done"
-              onSubmitEditing={handleRegister}
             />
 
             <Button
@@ -167,7 +149,7 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
               onPress={handleRegister}
               style={styles.submitButton}
             >
-              Crear cuenta académica
+              Crear Cuenta Académica
             </Button>
 
             <Button
@@ -176,21 +158,19 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
               onPress={() => navigation.replace('RoleSelect')}
               style={styles.skipButton}
             >
-              Explorar sin cuenta
+              Omitir registro — ver demo
             </Button>
           </Card>
 
-          {/* Enlace para Iniciar Sesión */}
+          {/* Login Link */}
           <View style={styles.footer}>
-            <MicroCopy>¿Ya tienes cuenta?</MicroCopy>
+            <MicroCopy>¿Ya tienes una cuenta institucional?</MicroCopy>
             <TouchableOpacity
-              accessibilityRole="link"
               activeOpacity={0.7}
-              hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
               onPress={() => navigation.navigate('Login')}
               style={styles.loginLink}
             >
-              <Text style={styles.loginLinkText}>Iniciar sesión</Text>
+              <Text style={styles.loginLinkText}>Inicia sesión aquí</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>

@@ -12,6 +12,7 @@ import React, {
   useContext,
   useMemo,
   useState,
+  ReactNode,
   useEffect,
   type ReactNode,
 } from 'react';
@@ -192,6 +193,8 @@ export function AuthProvider({
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
+export function useAuth() {
+  const context = useContext(AuthContext);
 
 /**
  * Returns the current auth context.

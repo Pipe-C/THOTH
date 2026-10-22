@@ -5,6 +5,8 @@ import {
   Text,
   TextInputProps,
   ViewStyle,
+  NativeSyntheticEvent,
+  TextInputFocusEventData,
 } from 'react-native';
 import { colors } from '../theme/tokens';
 import { styles } from '../styles/Input.styles';
@@ -34,12 +36,12 @@ export const Input: React.FC<InputProps> = ({
 }) => {
   const [isFocused, setIsFocused] = useState(false);
 
-  const handleFocus = (e: any) => {
+  const handleFocus = (e: NativeSyntheticEvent<TextInputFocusEventData>) => {
     setIsFocused(true);
     onFocus?.(e);
   };
 
-  const handleBlur = (e: any) => {
+  const handleBlur = (e: NativeSyntheticEvent<TextInputFocusEventData>) => {
     setIsFocused(false);
     onBlur?.(e);
   };
@@ -56,25 +58,23 @@ export const Input: React.FC<InputProps> = ({
       <View
         style={[
           styles.inputContainer,
-          isFocused && styles.inputFocused,
-          isError && styles.inputError,
         ]}
-        className={`flex-row items-center bg-white rounded-xl border border-primary/10 px-4 py-3 ${
-          isFocused ? 'border-primary' : ''
-        } ${isError ? 'border-red-500' : ''}`}
+        className={`flex-row items-center bg-white rounded-xl border border-primary/10 px-4 py-3 `}
       >
-        {leftIcon ? <View style={styles.iconLeft}>{leftIcon}</View> : null}
+        {leftIcon ? <View style={styles.iconContainer}>{leftIcon}</View> : null}
         <TextInput
-          accessibilityLabel={props.accessibilityLabel ?? label}
           placeholderTextColor={colors.textSecondary}
-          selectionColor={colors.primary}
-          style={[styles.input, style]}
-          className="flex-1 font-lexend-regular text-textPrimary py-0"
+          style={[
+              styles.input,
+              isFocused && styles.inputFocused,
+              isError && styles.inputError,
+              style]}
+          className="flex-1 font-lexend-regular text-sm text-textPrimary py-0"
           onFocus={handleFocus}
           onBlur={handleBlur}
           {...props}
         />
-        {rightIcon ? <View style={styles.iconRight}>{rightIcon}</View> : null}
+        {rightIcon ? <View style={styles.iconContainer}>{rightIcon}</View> : null}
       </View>
       {errorText ? (
         <Text style={styles.errorText} className="font-lexend-regular text-xs text-red-600 mt-1">
@@ -88,4 +88,3 @@ export const Input: React.FC<InputProps> = ({
     </View>
   );
 };
-
