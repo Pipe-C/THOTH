@@ -21,9 +21,3 @@ export const MAX_TOP_K = 20;
 
 /** Intentos máximos de regeneración del filtro anti-cliché. */
 export const MAX_REGENERATION_ATTEMPTS = 2;
-
-/** Dominio de correo institucional permitido en registro/login. */
-export const ALLOWED_DOMAIN = 'pascualbravo.edu.co';
-
-/** Longitud mínima aceptada para la contraseña. */
-export const MIN_PASSWORD_LENGTH = 8;
