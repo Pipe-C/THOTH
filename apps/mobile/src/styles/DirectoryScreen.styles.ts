@@ -44,7 +44,9 @@ export const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: typography.fontFamily.semiBold,
   },
-  headerActions: {},
+  headerActions: {
+    gap: 6,
+  },
   newChatButton: {
     width: '100%',
   },

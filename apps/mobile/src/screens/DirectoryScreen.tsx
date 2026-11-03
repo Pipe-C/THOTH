@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   FlatList,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useFocusEffect } from '@react-navigation/native';
@@ -135,7 +136,7 @@ function ConversationCard({
 }
 
 export const DirectoryScreen: React.FC<Props> = ({ navigation, route }) => {
-  const { session } = useAuth();
+  const { session, logout } = useAuth();
   const activeRole: UserProfileRole =
     route.params?.activeRole || session?.profile || 'estudiante';
   const [selectedFilter, setSelectedFilter] = useState<'all' | DocumentType>('all');
@@ -198,6 +199,26 @@ export const DirectoryScreen: React.FC<Props> = ({ navigation, route }) => {
     });
   };
 
+  const handleLogout = () => {
+    Alert.alert(
+      'Cerrar sesión',
+      '¿Seguro que deseas salir de tu cuenta institucional?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Cerrar sesión',
+          style: 'destructive',
+          onPress: () => {
+            void (async () => {
+              await logout();
+              navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+            })();
+          },
+        },
+      ],
+    );
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
@@ -228,6 +249,19 @@ export const DirectoryScreen: React.FC<Props> = ({ navigation, route }) => {
             >
               + Nueva Consulta Académica
             </Button>
+            {session ? (
+              <Button variant="ghost" size="sm" onPress={handleLogout}>
+                Cerrar sesión
+              </Button>
+            ) : (
+              <Button
+                variant="ghost"
+                size="sm"
+                onPress={() => navigation.navigate('Login')}
+              >
+                Iniciar sesión
+              </Button>
+            )}
           </View>
         </View>
 

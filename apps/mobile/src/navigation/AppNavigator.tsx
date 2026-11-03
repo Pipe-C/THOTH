@@ -1,4 +1,5 @@
 import React from 'react';
+import { ActivityIndicator, View } from 'react-native';
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { RootStackParamList } from './types';
@@ -9,7 +10,9 @@ import {
   DirectoryScreen,
   ChatScreen,
 } from '../screens';
+import { useAuth } from '../services/AuthContext';
 import { colors } from '../theme/tokens';
+import { styles } from '../styles/AppNavigator.styles';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -26,10 +29,20 @@ const TothNavigationTheme = {
 };
 
 export const AppNavigator: React.FC = () => {
+  const { session, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <View style={styles.loading}>
+        <ActivityIndicator color={colors.primary} size="large" />
+      </View>
+    );
+  }
+
   return (
     <NavigationContainer theme={TothNavigationTheme}>
       <Stack.Navigator
-        initialRouteName="Login"
+        initialRouteName={session ? 'Directory' : 'Login'}
         screenOptions={{
           headerShown: false,
           contentStyle: {

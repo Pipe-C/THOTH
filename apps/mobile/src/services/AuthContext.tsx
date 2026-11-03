@@ -15,11 +15,14 @@ import React, {
   useEffect,
   type ReactNode,
 } from 'react';
+import { AppState } from 'react-native';
 import {
   signIn,
   signUp,
   clearSession,
   getStoredSession,
+  refreshSession,
+  updateStoredProfile,
   type AuthSession,
 } from './authClient';
 import type { UserProfileRole } from '../types';
@@ -44,6 +47,8 @@ interface AuthContextValue {
     displayName: string,
     profile: UserProfileRole,
   ) => Promise<AuthSession>;
+  /** Updates the active academic profile and persists it locally */
+  updateProfile: (profile: UserProfileRole) => Promise<void>;
   /** Clears the session and redirects to Login */
   logout: () => Promise<void>;
 }
@@ -58,13 +63,85 @@ export function AuthProvider({
   const [session, setSession] = useState<AuthSession | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Restore persisted session on app launch
+  // Restore persisted session on app launch and refresh an expired token.
   useEffect(() => {
-    void getStoredSession().then((stored) => {
-      setSession(stored);
-      setIsLoading(false);
-    });
+    let isActive = true;
+
+    void (async () => {
+      const stored = await getStoredSession();
+      if (!stored) {
+        if (isActive) {
+          setSession(null);
+          setIsLoading(false);
+        }
+        return;
+      }
+
+      try {
+        const fresh = await refreshSession(stored, true);
+        if (isActive) setSession(fresh);
+      } catch {
+        if (isActive) setSession(stored);
+      } finally {
+        if (isActive) setIsLoading(false);
+      }
+    })();
+
+    return () => {
+      isActive = false;
+    };
   }, []);
+
+  // Refresh when the app returns to the foreground after being suspended.
+  useEffect(() => {
+    if (!session?.refreshToken) return undefined;
+
+    let isActive = true;
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state !== 'active') return;
+      void refreshSession(session)
+        .then((next) => {
+          if (isActive) setSession(next);
+        })
+        .catch(() => undefined);
+    });
+
+    return () => {
+      isActive = false;
+      subscription.remove();
+    };
+  }, [session]);
+
+  // Keep the ID token valid while the app stays open.
+  useEffect(() => {
+    if (!session?.refreshToken) return undefined;
+
+    let isActive = true;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
+    const schedule = (current: AuthSession) => {
+      const refreshAt = (current.expiresAt ?? 0) - 5 * 60_000;
+      const delay = Math.max(60_000, refreshAt - Date.now());
+      timer = setTimeout(() => {
+        void refreshSession(current)
+          .then((next) => {
+            if (!isActive) return;
+            setSession(next);
+            schedule(next);
+          })
+          .catch(() => {
+            if (isActive) schedule(current);
+          });
+      }, delay);
+    };
+
+    schedule(session);
+
+    return () => {
+      isActive = false;
+      if (timer) clearTimeout(timer);
+    };
+  }, [session]);
 
   const login = useCallback(
     async (
@@ -93,14 +170,23 @@ export function AuthProvider({
     [],
   );
 
+  const updateProfile = useCallback(
+    async (profile: UserProfileRole): Promise<void> => {
+      if (!session) return;
+      await updateStoredProfile(profile);
+      setSession({ ...session, profile });
+    },
+    [session],
+  );
+
   const logout = useCallback(async (): Promise<void> => {
     await clearSession();
     setSession(null);
   }, []);
 
   const value = useMemo(
-    () => ({ session, isLoading, login, register, logout }),
-    [session, isLoading, login, register, logout],
+    () => ({ session, isLoading, login, register, updateProfile, logout }),
+    [session, isLoading, login, register, updateProfile, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

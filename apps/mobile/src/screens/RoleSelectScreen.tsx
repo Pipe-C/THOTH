@@ -13,16 +13,19 @@ import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { Badge } from '../components/Badge';
 import { UserProfileRole } from '../types';
+import { useAuth } from '../services/AuthContext';
 import { styles } from '../styles/RoleSelectScreen.styles';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'RoleSelect'>;
 
 export const RoleSelectScreen: React.FC<Props> = ({ navigation, route }) => {
+  const { updateProfile } = useAuth();
   const [selectedRole, setSelectedRole] = useState<UserProfileRole>(
     route.params?.currentRole || 'estudiante'
   );
 
   const handleContinue = () => {
+    void updateProfile(selectedRole);
     navigation.navigate('Directory', { activeRole: selectedRole });
   };
 

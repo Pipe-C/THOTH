@@ -23,9 +23,12 @@ import type { UserProfileRole } from '../types';
 
 const FIREBASE_API_KEY = FIREBASE_CONFIG.apiKey;
 const AUTH_BASE = 'https://identitytoolkit.googleapis.com/v1';
+const SECURE_TOKEN_BASE = 'https://securetoken.googleapis.com/v1';
 
 // AsyncStorage keys
 const KEY_ID_TOKEN = '@toth/idToken';
+const KEY_REFRESH_TOKEN = '@toth/refreshToken';
+const KEY_EXPIRES_AT = '@toth/expiresAt';
 const KEY_UID = '@toth/uid';
 const KEY_EMAIL = '@toth/email';
 const KEY_PROFILE = '@toth/profile';
@@ -36,7 +39,18 @@ export interface AuthSession {
   uid: string;
   email: string;
   idToken: string;
+  refreshToken?: string;
+  expiresAt?: number;
   profile: UserProfileRole;
+}
+
+interface FirebaseAuthResponse {
+  localId: string;
+  idToken: string;
+  refreshToken?: string;
+  expiresIn?: string;
+  email: string;
+  displayName?: string;
 }
 
 export class AuthError extends Error {
@@ -73,6 +87,11 @@ function translateFirebaseError(code: string): string {
       return 'La contrasena debe tener al menos 6 caracteres.';
     case 'USER_DISABLED':
       return 'Esta cuenta ha sido deshabilitada.';
+    case 'USER_NOT_FOUND':
+      return 'La cuenta ya no existe. Inicia sesión de nuevo.';
+    case 'TOKEN_EXPIRED':
+    case 'INVALID_REFRESH_TOKEN':
+      return 'La sesión expiró. Inicia sesión de nuevo.';
     case 'TOO_MANY_ATTEMPTS_TRY_LATER':
       return 'Demasiados intentos. Intenta de nuevo mas tarde.';
     case 'API_KEY_INVALID':
@@ -123,12 +142,29 @@ async function firebasePost<T>(
 
 // ─── Session persistence ──────────────────────────────────────
 
+function toSession(
+  data: FirebaseAuthResponse,
+  profile: UserProfileRole,
+): AuthSession {
+  const expiresIn = Number(data.expiresIn ?? 3600);
+  return {
+    uid: data.localId,
+    email: data.email,
+    idToken: data.idToken,
+    refreshToken: data.refreshToken,
+    expiresAt: Date.now() + expiresIn * 1000,
+    profile,
+  };
+}
+
 async function persistSession(session: AuthSession): Promise<void> {
   await AsyncStorage.multiSet([
     [KEY_ID_TOKEN, session.idToken],
     [KEY_UID, session.uid],
     [KEY_EMAIL, session.email],
     [KEY_PROFILE, session.profile],
+    [KEY_REFRESH_TOKEN, session.refreshToken ?? ''],
+    [KEY_EXPIRES_AT, session.expiresAt ? String(session.expiresAt) : ''],
   ]);
 }
 
@@ -139,6 +175,8 @@ export async function getStoredSession(): Promise<AuthSession | null> {
     KEY_UID,
     KEY_EMAIL,
     KEY_PROFILE,
+    KEY_REFRESH_TOKEN,
+    KEY_EXPIRES_AT,
   ]);
   const map = Object.fromEntries(values.map(([k, v]) => [k, v]));
 
@@ -146,19 +184,92 @@ export async function getStoredSession(): Promise<AuthSession | null> {
   const uid = map[KEY_UID];
   const email = map[KEY_EMAIL];
   const profile = map[KEY_PROFILE] as UserProfileRole | null;
+  const refreshToken = map[KEY_REFRESH_TOKEN] || undefined;
+  const expiresAt = map[KEY_EXPIRES_AT]
+    ? Number(map[KEY_EXPIRES_AT])
+    : undefined;
 
   if (!idToken || !uid || !email || !profile) return null;
-  return { idToken, uid, email, profile };
+  return { idToken, uid, email, refreshToken, expiresAt, profile };
 }
 
 /** Clears the persisted session (sign-out). */
 export async function clearSession(): Promise<void> {
   await AsyncStorage.multiRemove([
     KEY_ID_TOKEN,
+    KEY_REFRESH_TOKEN,
+    KEY_EXPIRES_AT,
     KEY_UID,
     KEY_EMAIL,
     KEY_PROFILE,
   ]);
+}
+
+/** Persists the active academic profile so it survives app restarts. */
+export async function updateStoredProfile(
+  profile: UserProfileRole,
+): Promise<void> {
+  await AsyncStorage.setItem(KEY_PROFILE, profile);
+}
+
+/**
+ * Exchanges the refresh token for a fresh ID token. Returns the same
+ * session when it still has more than one minute of validity or when
+ * the stored session predates refresh-token support.
+ */
+export async function refreshSession(
+  session: AuthSession,
+  force = false,
+): Promise<AuthSession> {
+  if (!session.refreshToken) return session;
+  if (
+    !force &&
+    session.expiresAt !== undefined &&
+    session.expiresAt - Date.now() > 60_000
+  ) {
+    return session;
+  }
+
+  let response: Response;
+  try {
+    response = await fetch(
+      `${SECURE_TOKEN_BASE}/token?key=${FIREBASE_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `grant_type=refresh_token&refresh_token=${encodeURIComponent(
+          session.refreshToken,
+        )}`,
+      },
+    );
+  } catch {
+    throw new AuthError(
+      'NETWORK_ERROR',
+      'No se pudo renovar la sesión. Verifica tu conexión.',
+    );
+  }
+
+  const data = (await response.json()) as Record<string, unknown>;
+  if (!response.ok) {
+    const rawMessage = data['error'];
+    const code =
+      typeof rawMessage === 'string' ? rawMessage : 'REFRESH_TOKEN_ERROR';
+    throw new AuthError(code, translateFirebaseError(code));
+  }
+
+  const expiresIn = Number(data['expires_in'] ?? 3600);
+  const next: AuthSession = {
+    ...session,
+    uid: typeof data['user_id'] === 'string' ? data['user_id'] : session.uid,
+    idToken: String(data['id_token'] ?? session.idToken),
+    refreshToken:
+      typeof data['refresh_token'] === 'string'
+        ? data['refresh_token']
+        : session.refreshToken,
+    expiresAt: Date.now() + expiresIn * 1000,
+  };
+  await persistSession(next);
+  return next;
 }
 
 // ─── Public API ───────────────────────────────────────────────
@@ -186,18 +297,24 @@ export async function signUp(
 ): Promise<AuthSession> {
   assertInstitutionalEmail(email);
 
-  const data = await firebasePost<{
-    localId: string;
-    idToken: string;
-    email: string;
-  }>('accounts:signUp', { email, password, displayName });
+  const signUpData = await firebasePost<FirebaseAuthResponse>(
+    'accounts:signUp',
+    { email, password },
+  );
 
-  const session: AuthSession = {
-    uid: data.localId,
-    email: data.email,
-    idToken: data.idToken,
-    profile,
-  };
+  let data = signUpData;
+  try {
+    const updated = await firebasePost<FirebaseAuthResponse>(
+      'accounts:update',
+      { idToken: signUpData.idToken, displayName },
+    );
+    data = { ...signUpData, ...updated, email: updated.email || signUpData.email };
+  } catch {
+    // The account already exists and is usable even if the display-name
+    // update fails; do not turn a successful registration into an error.
+  }
+
+  const session = toSession(data, profile);
   await persistSession(session);
   return session;
 }
@@ -213,18 +330,12 @@ export async function signIn(
 ): Promise<AuthSession> {
   assertInstitutionalEmail(email);
 
-  const data = await firebasePost<{
-    localId: string;
-    idToken: string;
-    email: string;
-  }>('accounts:signInWithPassword', { email, password });
+  const data = await firebasePost<FirebaseAuthResponse>(
+    'accounts:signInWithPassword',
+    { email, password },
+  );
 
-  const session: AuthSession = {
-    uid: data.localId,
-    email: data.email,
-    idToken: data.idToken,
-    profile: profileFallback,
-  };
+  const session = toSession(data, profileFallback);
   await persistSession(session);
   return session;
 }
