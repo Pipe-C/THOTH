@@ -22,12 +22,12 @@ El monorepo (`apps/mobile`, `apps/backend`) usa npm workspaces. Rama de trabajo:
 - Toggle anti-cliché real: `antiClicheEnabled` viaja de `generateController` a
   `generationService`; con `false` se omite el `NEGATIVE_PROMPT` y no hay regeneración.
   Nuevo campo en `lib/types.ts`.
-- Tests nuevos para el toggle: **100 tests pasan**; `tsc --noEmit` OK.
+- Tests nuevos para el toggle: **75 tests pasan**; `tsc --noEmit` OK.
 - Script `npm run validate:rag` (`scripts/validate-rag.mjs`): valida los tres casos
   (institucional, web, mixto) y detecta clichés.
-- Auth v1 en Supabase (merge del PR #27): tabla `public.users` vía migración
-  `0003_create_users_table.sql`, hash scrypt e `idToken` aún placeholder. Producción
-  sigue sirviendo el auth mock hasta el deploy de `main`.
+- Auth Supabase retirada: `/api/v1/auth/*`, controlador/servicio/repositorio de
+  usuarios y tests eliminados. La autenticación vive solo en Firebase Auth; Supabase
+  queda como pgvector. La migración `0004_drop_users_table.sql` retira `public.users`.
 
 ### Mobile
 
@@ -39,8 +39,11 @@ El monorepo (`apps/mobile`, `apps/backend`) usa npm workspaces. Rama de trabajo:
   de error explícito.
 - `src/services/apiClient.ts`: usa `API_BASE_URL`, timeout de 45 s con `AbortController`,
   sobre de respuesta `ok` y errores tipados; `vectorSearch` tipado como `{ results, meta }`.
-- `src/services/authClient.ts`: guard `FIREBASE_NOT_CONFIGURED` y traducción de errores
-  `API_KEY_INVALID` / `CONFIGURATION_NOT_FOUND`.
+- `src/services/authClient.ts`: guard `FIREBASE_NOT_CONFIGURED`, traducción de errores
+  `API_KEY_INVALID` / `CONFIGURATION_NOT_FOUND`, persistencia de refresh token y
+  renovación automática del `idToken`.
+- Registro/login 100 % Firebase: `displayName` se actualiza en Auth, el perfil elegido
+  se conserva al reiniciar, hay cierre de sesión y la app restaura la sesión al abrir.
 - `ChatScreen`: envía `antiClicheEnabled`, filtra fuentes `'none'`, guarda el turno
   completo en `users/{uid}/conversations/{id}/messages` y mantiene la caché Room.
   Carga el historial al abrir una conversación y muestra estados de carga/error.
@@ -105,18 +108,17 @@ El monorepo (`apps/mobile`, `apps/backend`) usa npm workspaces. Rama de trabajo:
   **3/3 casos OK** (institucional, web, mixto). `/api/v1/health` → `healthy`.
 - SonarCloud (2026-10-22): tras los commits `7b76af7` y `4a48ec2`, el Quality Gate de
   `develop` quedó **OK** (`new_security_rating` 1, `new_maintainability_rating` 1,
-  cobertura nueva 84.0 %, 100 tests backend).
+  cobertura nueva 84.0 %, 100 tests backend antes de retirar auth Supabase; hoy 75).
+- PR #26 (`develop` → `main`) mergeado el 2026-10-23 (`7ab2b89`).
 
 ## 4. Pendientes
 
-1. Abrir y mergear el PR `develop` → `main`. Antes del merge, aplicar la migración
-   `0003_create_users_table.sql` en Supabase y verificar `/auth/register` +
-   `/auth/login` tras el deploy.
+1. Aplicar `0004_drop_users_table.sql` en Supabase (la tabla aún existe con 1 fila de
+   prueba) y verificar que no queden referencias.
 2. Verificar el caso de regeneración anti-cliché con una respuesta que contenga
    muletillas (hoy se validó el badge y el envío del toggle).
 3. Rotar la Supabase Secret key expuesta previamente y actualizarla en Vercel y `.env`.
-4. Evaluar refresh de `idToken` para sesiones largas (hoy se guarda el token de la
-   sesión inicial).
+4. Añadir notificaciones push con FCM y evaluar verificación de correo institucional.
 
 ## 5. Commits realizados (por capas)
 
