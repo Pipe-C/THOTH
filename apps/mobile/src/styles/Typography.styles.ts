@@ -9,6 +9,14 @@ export const styles = StyleSheet.create({
     color: colors.primary,
     fontFamily: typography.fontFamily.bold,
   },
+  title: {
+    fontSize: typography.scales.title.fontSize,
+    lineHeight: typography.scales.title.lineHeight,
+    fontWeight: typography.scales.title.fontWeight,
+    color: colors.primary,
+    fontFamily: typography.fontFamily.bold,
+    letterSpacing: typography.scales.title.letterSpacing,
+  },
   subtitle: {
     fontSize: typography.scales.subtitle.fontSize,
     lineHeight: typography.scales.subtitle.lineHeight,
@@ -29,6 +37,13 @@ export const styles = StyleSheet.create({
     fontWeight: typography.scales.body.fontWeight,
     color: colors.textPrimary,
     fontFamily: typography.fontFamily.regular,
+  },
+  label: {
+    fontSize: typography.scales.label.fontSize,
+    lineHeight: typography.scales.label.lineHeight,
+    fontWeight: typography.scales.label.fontWeight,
+    color: colors.textSecondary,
+    fontFamily: typography.fontFamily.medium,
   },
   microCopy: {
     fontSize: typography.scales.microCopy.fontSize,

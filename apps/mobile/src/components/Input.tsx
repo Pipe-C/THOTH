@@ -63,16 +63,18 @@ export const Input: React.FC<InputProps> = ({
           isFocused ? 'border-primary' : ''
         } ${isError ? 'border-red-500' : ''}`}
       >
-        {leftIcon ? <View style={styles.iconContainer}>{leftIcon}</View> : null}
+        {leftIcon ? <View style={styles.iconLeft}>{leftIcon}</View> : null}
         <TextInput
+          accessibilityLabel={props.accessibilityLabel ?? label}
           placeholderTextColor={colors.textSecondary}
+          selectionColor={colors.primary}
           style={[styles.input, style]}
-          className="flex-1 font-lexend-regular text-sm text-textPrimary py-0"
+          className="flex-1 font-lexend-regular text-textPrimary py-0"
           onFocus={handleFocus}
           onBlur={handleBlur}
           {...props}
         />
-        {rightIcon ? <View style={styles.iconContainer}>{rightIcon}</View> : null}
+        {rightIcon ? <View style={styles.iconRight}>{rightIcon}</View> : null}
       </View>
       {errorText ? (
         <Text style={styles.errorText} className="font-lexend-regular text-xs text-red-600 mt-1">

@@ -17,6 +17,16 @@ export const Display: React.FC<CustomTextProps> = ({ children, style, className 
   </Text>
 );
 
+export const Title: React.FC<CustomTextProps> = ({ children, style, className = '', ...props }) => (
+  <Text
+    style={[styles.title, style]}
+    className={`font-lexend-bold text-2xl tracking-tight text-primary ${className}`}
+    {...props}
+  >
+    {children}
+  </Text>
+);
+
 export const Subtitle: React.FC<CustomTextProps> = ({ children, style, className = '', ...props }) => (
   <Text
     style={[styles.subtitle, style]}
@@ -51,6 +61,16 @@ export const MicroCopy: React.FC<CustomTextProps> = ({ children, style, classNam
   <Text
     style={[styles.microCopy, style]}
     className={`font-lexend-medium text-xs font-medium text-textSecondary ${className}`}
+    {...props}
+  >
+    {children}
+  </Text>
+);
+
+export const Label: React.FC<CustomTextProps> = ({ children, style, className = '', ...props }) => (
+  <Text
+    style={[styles.label, style]}
+    className={`font-lexend-medium text-[13px] font-medium text-textSecondary ${className}`}
     {...props}
   >
     {children}

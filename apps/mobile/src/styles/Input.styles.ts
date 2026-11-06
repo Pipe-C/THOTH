@@ -1,9 +1,9 @@
 import { StyleSheet } from 'react-native';
-import { colors, radii, typography } from '../theme/tokens';
+import { colors, radii, sizes, typography } from '../theme/tokens';
 
 export const styles = StyleSheet.create({
   container: {
-    marginBottom: 16,
+    marginBottom: 18,
   },
   label: {
     fontSize: 13,
@@ -14,44 +14,52 @@ export const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    minHeight: sizes.input,
     backgroundColor: colors.surface,
     borderRadius: radii.input,
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: colors.border,
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 10,
   },
   inputFocused: {
+    borderWidth: 1.5,
     borderColor: colors.primary,
     shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
     elevation: 2,
   },
   inputError: {
-    borderColor: '#DC2626',
+    borderColor: colors.errorBorder,
   },
   input: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 15,
+    lineHeight: 20,
     color: colors.textPrimary,
     fontFamily: typography.fontFamily.regular,
     padding: 0,
   },
-  iconContainer: {
+  iconLeft: {
     marginRight: 8,
+  },
+  iconRight: {
+    marginLeft: 8,
   },
   helperText: {
     fontSize: 12,
+    lineHeight: 17,
     color: colors.textSecondary,
     fontFamily: typography.fontFamily.regular,
-    marginTop: 4,
+    marginTop: 6,
   },
   errorText: {
     fontSize: 12,
-    color: '#DC2626',
+    lineHeight: 17,
+    color: colors.errorText,
     fontFamily: typography.fontFamily.regular,
-    marginTop: 4,
+    marginTop: 6,
   },
 });

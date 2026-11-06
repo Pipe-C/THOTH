@@ -15,6 +15,7 @@ export const styles = StyleSheet.create({
   },
   textBase: {
     fontSize: 11,
+    lineHeight: 15,
     fontFamily: typography.fontFamily.medium,
   },
   // Institutional: Verde Menta Suave (#E8EFEA) con texto Verde Musgo Profundo (#2D4A3E)
@@ -24,32 +25,32 @@ export const styles = StyleSheet.create({
   institutionalText: {
     color: colors.primary,
   },
-  // Web: Gris Inactivo con texto Gris Ceniza
+  // Web: Gris Inactivo con texto oscuro (contraste AA en microcopy)
   webContainer: {
     backgroundColor: colors.toggleOff,
   },
   webText: {
-    color: colors.textSecondary,
+    color: colors.textPrimary,
   },
-  // Accent: Terracota Suave con texto blanco
+  // Accent: Terracota lavado con texto terracota profundo
   accentContainer: {
-    backgroundColor: colors.accent,
+    backgroundColor: colors.accentSoft,
   },
   accentText: {
-    color: colors.surface,
+    color: colors.accentStrong,
   },
   // Outline: Borde fino con texto Verde Musgo
   outlineContainer: {
     backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.borderStrong,
   },
   outlineText: {
     color: colors.primary,
   },
   // Neutral
   neutralContainer: {
-    backgroundColor: '#F1F5F9',
+    backgroundColor: colors.surfaceSunken,
   },
   neutralText: {
     color: colors.textPrimary,
