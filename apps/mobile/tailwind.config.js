@@ -15,6 +15,8 @@ module.exports = {
         },
         accent: {
           DEFAULT: '#C87D55', // Terracota Suave: Toggles ON, loaders, badges destacados
+          strong: '#A65C38',
+          soft: '#F6E7DD',
           dark: '#B06B45',
           light: '#D9936D',
         },
@@ -30,9 +32,22 @@ module.exports = {
         },
         background: '#FDFBF7',
         surface: '#FFFFFF',
+        surfaceMuted: '#F7F3EC',
+        surfaceSunken: '#F1EDE4',
         textPrimary: '#1E293B',
         textSecondary: '#64748B',
         validation: '#E8EFEA',
+        accentStrong: '#A65C38',
+        accentSoft: '#F6E7DD',
+      },
+      spacing: {
+        xs: '4px',
+        sm: '8px',
+        md: '12px',
+        lg: '16px',
+        xl: '20px',
+        xxl: '24px',
+        xxxl: '32px',
       },
       fontFamily: {
         lexend: ['Lexend', 'sans-serif'],
