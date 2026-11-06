@@ -11,7 +11,7 @@ import {
   findSimilarChunks,
   SIMILARITY_THRESHOLD,
 } from '../repositories/documentRepository.js';
-import type { ContextSource } from '../types.js';
+import type { ContextSource, VectorSearchResult } from '../types.js';
 
 export interface HybridContextResult {
   institutionalContext: string;
@@ -84,7 +84,16 @@ export async function resolveHybridContext(
   let institutionalContext = '';
   const sourcesUsed: ContextSource[] = [];
 
-  const vectorResults = await findSimilarChunks(prompt, DEFAULT_TOP_K);
+  let vectorResults: VectorSearchResult[] = [];
+  try {
+    vectorResults = await findSimilarChunks(prompt, DEFAULT_TOP_K);
+  } catch (error) {
+    console.warn(
+      '[RAG] Búsqueda institucional no disponible; se continúa con web.',
+      error instanceof Error ? error.message : String(error),
+    );
+  }
+
   const highQualityChunks = vectorResults.filter(
     (r) => r.similarity >= SIMILARITY_THRESHOLD,
   );
