@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { colors, typography } from '../theme/tokens';
+import { colors, radii, sizes, typography } from '../theme/tokens';
 
 export const styles = StyleSheet.create({
   safeArea: {
@@ -10,40 +10,44 @@ export const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 22,
-    paddingTop: 30,
+    paddingHorizontal: 24,
+    paddingTop: 40,
     paddingBottom: 40,
   },
   header: {
-    marginBottom: 24,
+    marginBottom: 28,
   },
   brandRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 6,
+    marginBottom: 20,
   },
   subtitle: {
-    marginTop: 4,
-    marginBottom: 6,
+    marginTop: 0,
+    marginBottom: 8,
   },
   headerDescription: {
     color: colors.textSecondary,
-    fontSize: 13,
+    fontSize: 14,
+    lineHeight: 22,
   },
   card: {
-    marginBottom: 20,
+    marginBottom: 24,
   },
   cardTitle: {
-    marginBottom: 16,
+    marginBottom: 6,
+  },
+  formHint: {
+    marginBottom: 20,
   },
   errorBanner: {
     backgroundColor: colors.errorBg,
     borderColor: colors.errorBorder,
     borderWidth: 1,
-    borderRadius: 8,
-    padding: 10,
-    marginBottom: 14,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
   },
   errorBannerText: {
     color: colors.errorText,
@@ -51,18 +55,21 @@ export const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.medium,
   },
   roleLabel: {
-    marginTop: 14,
+    marginTop: 18,
     marginBottom: 8,
   },
   roleRow: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 10,
   },
   roleChip: {
     flex: 1,
+    minHeight: sizes.touchTarget,
     alignItems: 'center',
-    paddingVertical: 10,
-    borderRadius: 10,
+    justifyContent: 'center',
+    paddingVertical: 11,
+    paddingHorizontal: 12,
+    borderRadius: radii.input,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
@@ -77,44 +84,50 @@ export const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.medium,
   },
   roleChipTextActive: {
-    color: colors.surface,
+    color: colors.onAccent,
   },
   submitButton: {
-    marginTop: 14,
+    marginTop: 20,
   },
   skipButton: {
-    marginTop: 12,
+    marginTop: 8,
     alignSelf: 'center',
   },
   demoFillContainer: {
-    marginTop: 18,
-    paddingTop: 14,
+    marginTop: 24,
+    paddingTop: 16,
     borderTopWidth: 1,
     borderTopColor: colors.border,
   },
   demoFillLabel: {
-    marginBottom: 8,
+    marginBottom: 10,
     color: colors.textSecondary,
   },
   demoButtonsRow: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 10,
   },
   demoBadge: {
+    flex: 1,
+    minHeight: sizes.touchTarget,
+    alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: colors.validation,
     paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
+    paddingVertical: 10,
+    borderRadius: radii.input,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   demoBadgeText: {
     color: colors.primary,
     fontSize: 12,
-    fontFamily: typography.fontFamily.medium,
+    fontFamily: typography.fontFamily.semiBold,
   },
   footer: {
     alignItems: 'center',
-    gap: 12,
-    marginTop: 10,
+    gap: 14,
+    marginTop: 16,
   },
   footerRow: {
     flexDirection: 'row',

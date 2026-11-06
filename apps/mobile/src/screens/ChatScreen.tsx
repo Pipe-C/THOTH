@@ -12,6 +12,13 @@ import {
   Alert,
 } from 'react-native';
 import Clipboard from '@react-native-clipboard/clipboard';
+import {
+  ArrowLeft,
+  MessageSquareText,
+  Plus,
+  Send,
+  ShieldCheck,
+} from 'lucide-react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { CardHeader, Body, MicroCopy } from '../components/Typography';
@@ -285,9 +292,11 @@ export const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
         const errorMsg: ChatMessage = {
           id: createId('msg'),
           sender: 'assistant',
-          content: `⚠️ ${errorText}`,
+          content: `No se pudo completar la consulta: ${errorText}`,
           createdAt: errorCreatedAt,
           timestamp: formatTime(errorCreatedAt),
+          sourcesUsed: [],
+          antiClicheApplied: false,
         };
         setMessages((prev) => [...prev, errorMsg]);
       } finally {
@@ -353,10 +362,12 @@ export const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
           <View style={styles.headerRow}>
             <TouchableOpacity
               activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel="Volver al directorio"
               onPress={() => navigation.goBack()}
               style={styles.backButton}
             >
-              <Text style={styles.backButtonText}>← Volver</Text>
+              <ArrowLeft size={20} color={colors.primary} strokeWidth={2} />
             </TouchableOpacity>
 
             <View style={styles.headerTitleContainer}>
@@ -379,6 +390,7 @@ export const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
             <Toggle
               label="Filtro Anti-Cliché"
               description="Elimina muletillas y patrones sintácticos de IA"
+              icon={<ShieldCheck size={18} color={colors.primary} strokeWidth={1.9} />}
               value={antiClicheEnabled}
               onValueChange={setAntiClicheEnabled}
               containerStyle={styles.toggleContainer}
@@ -392,43 +404,61 @@ export const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
             {activeRole === 'estudiante' ? (
               <>
                 <TouchableOpacity
+                  accessibilityRole="button"
+                  accessibilityLabel="Usar plantilla de informe de laboratorio"
                   onPress={() => applyTemplate('informe_laboratorio', 'Redacta un informe de laboratorio sobre: [tema] siguiendo el syllabus institucional')}
                   style={styles.templateChip}
                 >
-                  <Text style={styles.templateChipText}>+ Informe de Laboratorio</Text>
+                  <Plus size={13} color={colors.primary} strokeWidth={2.2} />
+                  <Text style={styles.templateChipText}>Informe de Laboratorio</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
+                  accessibilityRole="button"
+                  accessibilityLabel="Usar plantilla de ensayo académico"
                   onPress={() => applyTemplate('ensayo', 'Escribe un ensayo académico sobre: [tema] fundamentado en el material institucional')}
                   style={styles.templateChip}
                 >
-                  <Text style={styles.templateChipText}>+ Ensayo Académico</Text>
+                  <Plus size={13} color={colors.primary} strokeWidth={2.2} />
+                  <Text style={styles.templateChipText}>Ensayo Académico</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
+                  accessibilityRole="button"
+                  accessibilityLabel="Usar plantilla de consulta de reglamentos"
                   onPress={() => applyTemplate('consulta_libre', '¿Qué requisitos exige el reglamento estudiantil sobre: [consulta]?')}
                   style={styles.templateChip}
                 >
-                  <Text style={styles.templateChipText}>+ Consulta Reglamentos</Text>
+                  <Plus size={13} color={colors.primary} strokeWidth={2.2} />
+                  <Text style={styles.templateChipText}>Consulta Reglamentos</Text>
                 </TouchableOpacity>
               </>
             ) : (
               <>
                 <TouchableOpacity
+                  accessibilityRole="button"
+                  accessibilityLabel="Usar plantilla de guía de clase"
                   onPress={() => applyTemplate('guia_clase', 'Genera una guía de clase sobre: [tema] para el curso de [asignatura]')}
                   style={styles.templateChip}
                 >
-                  <Text style={styles.templateChipText}>+ Guía de Clase</Text>
+                  <Plus size={13} color={colors.primary} strokeWidth={2.2} />
+                  <Text style={styles.templateChipText}>Guía de Clase</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
+                  accessibilityRole="button"
+                  accessibilityLabel="Usar plantilla de artículo académico"
                   onPress={() => applyTemplate('articulo_investigacion', 'Redacta un artículo académico sobre: [tema] para revisión por pares')}
                   style={styles.templateChip}
                 >
-                  <Text style={styles.templateChipText}>+ Artículo Académico</Text>
+                  <Plus size={13} color={colors.primary} strokeWidth={2.2} />
+                  <Text style={styles.templateChipText}>Artículo Académico</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
+                  accessibilityRole="button"
+                  accessibilityLabel="Usar plantilla de rúbrica de evaluación"
                   onPress={() => applyTemplate('guia_clase', 'Estructura una rúbrica analítica de evaluación para la entrega de [proyecto]')}
                   style={styles.templateChip}
                 >
-                  <Text style={styles.templateChipText}>+ Rúbrica de Evaluación</Text>
+                  <Plus size={13} color={colors.primary} strokeWidth={2.2} />
+                  <Text style={styles.templateChipText}>Rúbrica de Evaluación</Text>
                 </TouchableOpacity>
               </>
             )}
@@ -441,6 +471,7 @@ export const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
           style={styles.chatScroll}
           contentContainerStyle={styles.chatContent}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
           {historyError ? (
             <View style={styles.historyError}>
@@ -457,6 +488,9 @@ export const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
 
           {!isLoadingHistory && messages.length === 0 && !historyError ? (
             <Card style={styles.emptyChatCard}>
+              <View style={styles.emptyChatIcon}>
+                <MessageSquareText size={20} color={colors.primary} strokeWidth={1.8} />
+              </View>
               <CardHeader style={styles.emptyChatTitle}>
                 Inicia una conversación académica
               </CardHeader>
@@ -489,8 +523,8 @@ export const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
                 <PaperResultViewer
                   title="Respuesta Académica TOTH"
                   content={msg.content}
-                  sourcesUsed={msg.sourcesUsed || ['institutional']}
-                  antiClicheApplied={msg.antiClicheApplied ?? true}
+                  sourcesUsed={msg.sourcesUsed ?? []}
+                  antiClicheApplied={msg.antiClicheApplied ?? false}
                   createdAt={formatResultDate(msg.createdAt)}
                   onExportPdf={() => void handleExportPdf(msg)}
                   onExportDocx={() => void handleExportDocx(msg)}
@@ -515,15 +549,21 @@ export const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
           <View style={styles.inputContainer}>
             <TextInput
               style={styles.input}
+              accessibilityLabel="Mensaje para TOTH"
               placeholder="Escribe tu consulta o petición académica..."
               placeholderTextColor={colors.textSecondary}
+              selectionColor={colors.primary}
               value={inputText}
               onChangeText={setInputText}
               multiline
               maxLength={1000}
+              textAlignVertical="top"
             />
             <TouchableOpacity
               activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel="Enviar consulta"
+              accessibilityState={{ disabled: !inputText.trim() || isGenerating }}
               disabled={!inputText.trim() || isGenerating}
               onPress={handleSend}
               style={[
@@ -531,6 +571,7 @@ export const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
                 (!inputText.trim() || isGenerating) && styles.sendButtonDisabled,
               ]}
             >
+              <Send size={14} color={colors.onAccent} strokeWidth={2} />
               <Text style={styles.sendButtonText}>Enviar</Text>
             </TouchableOpacity>
           </View>

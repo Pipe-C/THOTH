@@ -10,40 +10,44 @@ export const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 22,
-    paddingTop: 24,
+    paddingHorizontal: 24,
+    paddingTop: 40,
     paddingBottom: 40,
   },
   header: {
-    marginBottom: 24,
+    marginBottom: 28,
   },
   brandRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 6,
+    marginBottom: 20,
   },
   subtitle: {
-    marginTop: 4,
-    marginBottom: 6,
+    marginTop: 0,
+    marginBottom: 8,
   },
   headerDescription: {
     color: colors.textSecondary,
-    fontSize: 13,
+    fontSize: 14,
+    lineHeight: 22,
   },
   card: {
-    marginBottom: 20,
+    marginBottom: 24,
   },
   cardTitle: {
-    marginBottom: 16,
+    marginBottom: 6,
+  },
+  formHint: {
+    marginBottom: 20,
   },
   errorBanner: {
     backgroundColor: colors.errorBg,
     borderColor: colors.errorBorder,
     borderWidth: 1,
-    borderRadius: 8,
-    padding: 10,
-    marginBottom: 14,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
   },
   errorBannerText: {
     color: colors.errorText,

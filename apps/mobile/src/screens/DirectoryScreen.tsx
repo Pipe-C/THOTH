@@ -9,10 +9,17 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
+import {
+  ChevronDown,
+  ChevronRight,
+  LogOut,
+  MessageSquareText,
+  Plus,
+} from 'lucide-react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useFocusEffect } from '@react-navigation/native';
 import { RootStackParamList } from '../navigation/types';
-import { CardHeader, MicroCopy } from '../components/Typography';
+import { Body, CardHeader, MicroCopy } from '../components/Typography';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { Badge } from '../components/Badge';
@@ -82,10 +89,13 @@ function EmptyHistory({
 
   return (
     <Card style={styles.emptyCard}>
+      <View style={styles.emptyIcon}>
+        <MessageSquareText size={20} color={colors.primary} strokeWidth={1.8} />
+      </View>
       <CardHeader style={styles.emptyTitle}>{title}</CardHeader>
-      <MicroCopy style={styles.emptySubtitle}>
+      <Body style={styles.emptyBody}>
         {error ?? defaultMessage}
-      </MicroCopy>
+      </Body>
     </Card>
   );
 }
@@ -102,6 +112,8 @@ function ConversationCard({
   return (
     <TouchableOpacity
       activeOpacity={0.85}
+      accessibilityRole="button"
+      accessibilityLabel={`Abrir conversación: ${item.title}`}
       onPress={() => onOpen(item)}
       style={styles.docItemCard}
     >
@@ -129,7 +141,10 @@ function ConversationCard({
         <MicroCopy>
           Perfil: {item.profile === 'estudiante' ? 'Estudiante' : 'Docente'}
         </MicroCopy>
-        <Text style={styles.openHint}>Abrir conversación →</Text>
+        <View style={styles.openHintRow}>
+          <Text style={styles.openHint}>Abrir</Text>
+          <ChevronRight size={14} color={colors.accentStrong} strokeWidth={2.2} />
+        </View>
       </View>
     </TouchableOpacity>
   );
@@ -225,18 +240,23 @@ export const DirectoryScreen: React.FC<Props> = ({ navigation, route }) => {
         {/* Header Superior con Perfil */}
         <View style={styles.header}>
           <View style={styles.headerTop}>
-            <View>
+            <View style={styles.identityBlock}>
               <Text style={styles.appTitle}>TOTH</Text>
-              <MicroCopy style={styles.userEmail}>{displayEmail}</MicroCopy>
+              <MicroCopy style={styles.userEmail} numberOfLines={1}>
+                {displayEmail}
+              </MicroCopy>
             </View>
             <TouchableOpacity
               activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel="Cambiar perfil académico"
               onPress={() => navigation.navigate('RoleSelect', { currentRole: activeRole })}
               style={styles.profileBadge}
             >
               <Text style={styles.profileBadgeText}>
-                Rol: {activeRole === 'estudiante' ? 'Estudiante' : 'Docente'} ▾
+                Rol: {activeRole === 'estudiante' ? 'Estudiante' : 'Docente'}
               </Text>
+              <ChevronDown size={14} color={colors.primary} strokeWidth={2} />
             </TouchableOpacity>
           </View>
 
@@ -244,14 +264,21 @@ export const DirectoryScreen: React.FC<Props> = ({ navigation, route }) => {
             <Button
               variant="primary"
               size="md"
+              leftIcon={<Plus size={16} color={colors.surface} strokeWidth={2.4} />}
               onPress={handleNewChat}
               style={styles.newChatButton}
             >
-              + Nueva Consulta Académica
+              Nueva consulta
             </Button>
             {session ? (
-              <Button variant="ghost" size="sm" onPress={handleLogout}>
-                Cerrar sesión
+              <Button
+                variant="ghost"
+                size="sm"
+                accessibilityLabel="Cerrar sesión"
+                leftIcon={<LogOut size={15} color={colors.textSecondary} strokeWidth={1.9} />}
+                onPress={handleLogout}
+              >
+                Salir
               </Button>
             ) : (
               <Button
@@ -277,6 +304,8 @@ export const DirectoryScreen: React.FC<Props> = ({ navigation, route }) => {
               return (
                 <TouchableOpacity
                   key={filter.value}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: isActive }}
                   onPress={() => setSelectedFilter(filter.value)}
                   style={[
                     styles.filterChip,
