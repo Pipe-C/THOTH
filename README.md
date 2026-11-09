@@ -40,10 +40,15 @@ capas de diseño sobre el LLM:
 | 2 | Pantallas de flujo principal (mock data) | ✅ Completa |
 | 3 | Backend: Vercel + Groq + Supabase RAG | ✅ Completa |
 | 4 | Integración real frontend-backend + puente Kotlin | ✅ Completa |
-| 5 | Integración y validación final | 🟡 RAG 3/3 en producción y E2E en emulador OK; falta la prueba de regeneración anti-cliché |
+| 5 | Integración y validación final | 🟡 Anti-cliché y fallback web validados con Groq/Tavily reales y E2E OK; RAG institucional/productivo pendiente de restaurar Supabase y redesplegar |
 
 > El detalle completo de cada fase, criterios de aceptación y decisiones de arquitectura
 > vive en el documento interno de directivas del agente (no versionado en este repo).
+>
+> **Nota 2026-11-06:** el proyecto Supabase `xrbezcimbdpnmfzevprb` no resuelve DNS
+> (`NXDOMAIN`), por lo que el RAG institucional productivo está caído. El backend local
+> ya degrada a búsqueda web, pero el deploy productivo con ese fallback está pendiente de
+> confirmación. Ver `estado_proyecto_toth.md`, sección 7.
 
 ---
 
@@ -264,8 +269,12 @@ npx firebase-tools deploy --only firestore:rules
 ```bash
 # Backend: pruebas y typecheck
 cd apps/backend
-npm test                 # 75 tests
+npm test                 # 76 tests (2 live omitidos por defecto)
 npm run lint             # tsc --noEmit
+
+# Pruebas live (consumen Groq/Tavily reales)
+$env:RUN_LIVE_TESTS='1'; npx vitest run tests/integration --reporter=verbose
+Remove-Item Env:RUN_LIVE_TESTS
 
 # Typecheck de la app móvil
 cd apps/mobile

@@ -1,6 +1,6 @@
 # Estado del proyecto TOTH
 
-> Actualizado: 2026-10-22. Este documento resume el estado verificable del repo;
+> Actualizado: 2026-11-06. Este documento resume el estado verificable del repo;
 > las directivas completas viven en `AGENTS.md` y `COMPORTAMIENTO_DEL_ASISTENTE.md`.
 
 ## 1. Resumen
@@ -8,7 +8,7 @@
 | Fase | Estado |
 | :--- | :--- |
 | 0–4 (scaffold, UI, backend, integración + Kotlin) | ✅ Completas |
-| 5 (validación final) | 🟡 RAG 3/3 en producción y E2E en emulador OK; falta la prueba de regeneración anti-cliché |
+| 5 (validación final) | 🟡 Anti-cliché y fallback web validados con Groq/Tavily reales; RAG institucional y producción bloqueados por la caída DNS de Supabase |
 
 El monorepo (`apps/mobile`, `apps/backend`) usa npm workspaces. Rama de trabajo:
 `develop`. Backend desplegado en `https://thoth-backend.vercel.app`.
@@ -72,9 +72,38 @@ El monorepo (`apps/mobile`, `apps/backend`) usa npm workspaces. Rama de trabajo:
 - Portapapeles real con `@react-native-clipboard/clipboard` (el handler anterior solo
   mostraba el aviso, sin copiar).
 
+## 2.1 Cambios de la sesión 2026-11-06
+
+### Backend
+
+- `resolveHybridContext` degrada a contexto web/none si la búsqueda institucional
+  falla (`fix(rag)`), en vez de devolver 502. Cubierto por tests unitarios y por una
+  prueba de integración real con Groq/Tavily (`tests/integration/ragFallback...`).
+- Prueba de integración real del filtro anti-cliché: Groq genera una salida con
+  muletillas, el filtro las detecta, se construye el prompt de reescritura y el
+  modelo devuelve un texto limpio (`tests/integration/antiCliche...`). Ambas pruebas
+  viven tras `RUN_LIVE_TESTS=1` para no consumir cuota en CI.
+- Suite: **76 tests pasan, 2 live tests se omiten por defecto**; `tsc --noEmit` OK.
+
+### Mobile
+
+- Rediseño “Serenidad Académica”: tokens ampliados, tipografía Lexend
+  (Light/Regular/Medium/SemiBold/Bold), componentes base con touch targets de 44 px,
+  accesibilidad, contraste y pantallas pulidas.
+- Mensajes de error del chat ya no muestran badges falsos de RAG/anti-cliché.
+- Build release Android y E2E en emulador Pixel 7 (Android 17): Login → Directory →
+  Chat → RoleSelect, con verificación por `uiautomator dump`.
+
 ## 3. Validación ejecutada
 
-- `npm test` (backend): **100/100**.
+- 2026-11-06 — `npm test` (backend): **76/76** pasan; 2 pruebas live omitidas por
+  defecto. `RUN_LIVE_TESTS=1` ejecuta la regeneración anti-cliché real y el fallback
+  web real: **2/2 OK**. `npm run lint` (tsc --noEmit): OK.
+- 2026-11-06 — `npx tsc --noEmit` (mobile): OK. `assembleRelease`: BUILD SUCCESSFUL.
+  APK instalada en Pixel 7 (Android 17) y flujo E2E validado por `uiautomator dump`.
+- 2026-11-06 — `GET https://thoth-backend.vercel.app/api/v1/health` responde 503
+  `degraded` con `supabase: false`, `groq: true` (ver sección 7).
+- `npm test` (backend, histórico): **100/100**.
 - `npm run lint` (backend, `tsc --noEmit`): OK.
 - `npx tsc --noEmit` (mobile): OK.
 - `gradlew assembleDebug`: **BUILD SUCCESSFUL**.
@@ -108,17 +137,24 @@ El monorepo (`apps/mobile`, `apps/backend`) usa npm workspaces. Rama de trabajo:
   **3/3 casos OK** (institucional, web, mixto). `/api/v1/health` → `healthy`.
 - SonarCloud (2026-10-22): tras los commits `7b76af7` y `4a48ec2`, el Quality Gate de
   `develop` quedó **OK** (`new_security_rating` 1, `new_maintainability_rating` 1,
-  cobertura nueva 84.0 %, 100 tests backend antes de retirar auth Supabase; hoy 75).
+  cobertura nueva 84.0 %, 100 tests backend antes de retirar auth Supabase; hoy 76).
 - PR #26 (`develop` → `main`) mergeado el 2026-10-23 (`7ab2b89`).
 
 ## 4. Pendientes
 
-1. Aplicar `0004_drop_users_table.sql` en Supabase (la tabla aún existe con 1 fila de
-   prueba) y verificar que no queden referencias.
-2. Verificar el caso de regeneración anti-cliché con una respuesta que contenga
-   muletillas (hoy se validó el badge y el envío del toggle).
-3. Rotar la Supabase Secret key expuesta previamente y actualizarla en Vercel y `.env`.
-4. Añadir notificaciones push con FCM y evaluar verificación de correo institucional.
+1. **Restaurar Supabase** (proyecto `xrbezcimbdpnmfzevprb`): el host no resuelve DNS
+   (`NXDOMAIN`). Actualizar `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY` en `.env` y en
+   Vercel, y volver a desplegar el backend.
+2. **Desplegar el backend** con el fallback web (`fix(rag)`) y verificar `/health`
+   (`healthy`) y `npm run validate:rag` (3/3). Requiere confirmación explícita.
+3. Aplicar `0004_drop_users_table.sql` cuando Supabase esté operativo y verificar que no
+   queden referencias a `public.users`.
+4. Rotar la Supabase Secret key expuesta previamente y actualizarla en Vercel y `.env`.
+5. Pushear los commits locales de `develop` y abrir PR `develop` → `main`.
+6. Añadir notificaciones push con FCM (requiere `google-services.json` y cuenta de
+   servicio de Firebase) y evaluar verificación de correo institucional.
+7. Cargar documentos institucionales reales en `apps/backend/documents/` y ejecutar
+   `npm run ingest` cuando Supabase esté disponible.
 
 ## 5. Commits realizados (por capas)
 
@@ -136,8 +172,27 @@ El monorepo (`apps/mobile`, `apps/backend`) usa npm workspaces. Rama de trabajo:
 12. `fix(auth): conserva el perfil elegido al iniciar sesión`
 13. `fix(backend): simplifica la validación de credenciales`
 14. `fix(mobile): resuelve hallazgos de seguridad y complejidad de Sonar`
+15. `refactor(backend): retira la autenticación paralela de Supabase`
+16. `feat(mobile): completa registro, login y sesión con Firebase`
+17. `docs: documenta Firebase Auth como única autenticación`
+18. `fix(rag): degrada a web cuando falla la búsqueda institucional`
+19. `feat(mobile): incorpora la tipografía Lexend`
+20. `feat(theme): amplía tokens de identidad y accesibilidad`
+21. `feat(ui): mejora componentes base con accesibilidad y contraste`
+22. `feat(mobile): rediseña pantallas del flujo académico`
+23. `test(backend): valida anti-cliché y fallback web con servicios reales`
 
 > No se hace `git push` sin confirmación explícita.
+
+## 7. Bloqueo actual (2026-11-06)
+
+- `xrbezcimbdpnmfzevprb.supabase.co` no resuelve (`NXDOMAIN` desde 8.8.8.8).
+  El backend productivo responde `503 degraded` (`supabase: false`, `groq: true`).
+- El código local ya degrada a web/none y se validó en vivo con Tavily/Groq, pero
+  **producción sigue ejecutando la versión anterior** hasta que se autorice el deploy.
+- La app móvil instalada muestra el error de base vectorial porque apunta al backend
+  productivo. Al restaurar Supabase y redesplegar, el flujo RAG vuelve a funcionar sin
+  cambios adicionales en la app.
 
 ## 6. Notas de entorno
 
