@@ -181,6 +181,7 @@ El monorepo (`apps/mobile`, `apps/backend`) usa npm workspaces. Rama de trabajo:
 21. `feat(ui): mejora componentes base con accesibilidad y contraste`
 22. `feat(mobile): rediseña pantallas del flujo académico`
 23. `test(backend): valida anti-cliché y fallback web con servicios reales`
+24. `chore: ignora credenciales de Firebase y keystores`
 
 > No se hace `git push` sin confirmación explícita.
 
