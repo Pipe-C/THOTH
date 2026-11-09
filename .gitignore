@@ -12,3 +12,10 @@ COMPORTAMIENTO_DEL_ASISTENTE.md
 GUIA_INSTALACION_DEMO_LOCAL.md
 DEMO_PROFESOR.md
 apps/mobile/.env
+apps/mobile/android/app/google-services.json
+apps/mobile/ios/GoogleService-Info.plist
+*.jks
+*.keystore
+*.p8
+*.p12
+serviceAccountKey.json
