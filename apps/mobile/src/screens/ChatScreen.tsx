@@ -13,20 +13,26 @@ import {
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { MainStackParamList } from '../types/navigation';
-import { Display, Subtitle, CardHeader, Body, MicroCopy } from '../components/Typography';
-import { Card } from '../components/Card';
-import { Button } from '../components/Button';
+import { Display, Body, MicroCopy } from '../components/Typography';
 import { Toggle } from '../components/Toggle';
 import { Badge } from '../components/Badge';
 import { PaperResultViewer } from '../components/PaperResultViewer';
 import { colors } from '../theme/tokens';
 import { ChatMessage, MOCK_INITIAL_MESSAGES } from '../services/mockData';
-import { DocumentType, UserProfileRole } from '../types';
+import { DocumentType, UserProfileRole, toApiDocumentType } from '../types';
+import { apiClient, isTothApiError } from '../services/apiClient';
+import {
+  exportDocumentToPdf,
+  exportDocumentToWord,
+  saveLocalRoomDocument,
+} from '../services/nativeBridge';
+import { useAuth } from '../context/AuthContext';
 import { styles } from '../styles/ChatScreen.styles';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'Chat'>;
 
 export const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
+  const { session } = useAuth();
   const activeRole: UserProfileRole = route.params?.activeRole || 'estudiante';
   const initialDocType: DocumentType = route.params?.documentType || 'consulta_libre';
   const docTitle = route.params?.initialTitle || 'Nueva Consulta Académica';
@@ -82,7 +88,7 @@ export const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
 
         setMessages((prev) => [...prev, assistantMsg]);
 
-        // Guardado en caché local SQLite vía Room Kotlin bridge
+        // Saved of SQLite local cache via Room Kotlin bridge
         void saveLocalRoomDocument({
           id: assistantMsg.id,
           title: docTitle,

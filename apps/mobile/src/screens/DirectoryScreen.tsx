@@ -10,27 +10,25 @@ import {
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { MainStackParamList } from '../types/navigation';
-import { Display, Subtitle, CardHeader, Body, MicroCopy } from '../components/Typography';
+import { Display, CardHeader, Body, MicroCopy } from '../components/Typography';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { Badge } from '../components/Badge';
 import { MOCK_DIRECTORY_ITEMS, MOCK_CURRENT_USER } from '../services/mockData';
 import { getUserDocuments } from '../services/firestoreClient';
-import { useAuth } from '../services/AuthContext';
+import { useAuth } from '../context/AuthContext';
 import { colors } from '../theme/tokens';
 import { DocumentHistoryItem, DocumentType, UserProfileRole } from '../types';
 import { styles } from '../styles/DirectoryScreen.styles';
-import { useAuth } from "../context/AuthContext";
 
 type Props = NativeStackScreenProps<MainStackParamList, 'Directory'>;
 
 export const DirectoryScreen: React.FC<Props> = ({ navigation, route }) => {
   const { session } = useAuth();
-  const [activeRole, setActiveRole] = useState<UserProfileRole>(
+  const [activeRole] = useState<UserProfileRole>(
     route.params?.activeRole || session?.profile || 'estudiante'
   );
   const [selectedFilter, setSelectedFilter] = useState<'all' | DocumentType>('all');
-  // Start with mock items while real data loads
   const [items, setItems] = useState<DocumentHistoryItem[]>(MOCK_DIRECTORY_ITEMS);
   const [isLoadingDocs, setIsLoadingDocs] = useState(false);
 
@@ -40,7 +38,6 @@ export const DirectoryScreen: React.FC<Props> = ({ navigation, route }) => {
     setIsLoadingDocs(true);
     void getUserDocuments(session.uid, session.idToken).then((firestoreDocs) => {
       if (firestoreDocs.length > 0) {
-        // Merge: show real docs first, append mocks only when list is empty
         setItems(firestoreDocs);
       }
       setIsLoadingDocs(false);
@@ -89,7 +86,7 @@ export const DirectoryScreen: React.FC<Props> = ({ navigation, route }) => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        {/* Header Superior con Perfil */}
+        {/* Superior Header with Profile */}
         <View style={styles.header}>
           <View style={styles.headerTop}>
             <View>
