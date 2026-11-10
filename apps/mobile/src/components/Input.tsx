@@ -52,6 +52,7 @@ export const Input: React.FC<InputProps> = ({
         </Text>
       ) : null}
       <View
+        collapsable={false}
         style={[
           styles.inputContainer,
           isFocused && styles.inputFocused,
