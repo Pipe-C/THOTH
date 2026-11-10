@@ -161,3 +161,4 @@ main().catch((err) => {
   console.error('[create-firebase-users] Error inesperado:', err);
   process.exit(1);
 });
+
