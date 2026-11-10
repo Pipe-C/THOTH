@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { AuthStackParamList } from '../types/navigation';
-import { Display, Subtitle, CardHeader, Body, MicroCopy } from '../components/Typography';
+import { Display, Title, CardHeader, Body, MicroCopy } from '../components/Typography';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
@@ -26,13 +26,14 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [selectedProfile] = useState<'estudiante' | 'docente'>('estudiante');
+  const selectedProfile = 'estudiante' as const;
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const isEmailValidInstitutional = email.trim().toLowerCase().endsWith('@pascualbravo.edu.co');
 
   const handleRegister = () => {
+    if (isLoading) return;
     setError(null);
     if (!fullName.trim()) {
       setError('Por favor ingresa tu nombre completo.');
@@ -59,6 +60,7 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
     void (async () => {
       try {
         await register(email.trim(), password, fullName.trim(), selectedProfile);
+        // AppNavigator switches to MainNavigator when the session is set.
       } catch (err) {
         setError(
           isAuthError(err)
@@ -80,23 +82,25 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
         >
-          {/* Identity Header */}
+          {/* Header Identitario */}
           <View style={styles.header}>
             <View style={styles.brandRow}>
               <Display>TOTH</Display>
               <Badge label="I.U. Pascual Bravo" variant="institutional" />
             </View>
-            <Subtitle style={styles.subtitle}>Registro Institucional</Subtitle>
+            <Title style={styles.subtitle}>Crea tu cuenta</Title>
             <Body style={styles.headerDescription}>
-              Crea tu cuenta académica para acceder al modelo RAG con fondos documentales de la institución.
+              Usa tu correo del Pascual Bravo para acceder al fondo documental institucional.
             </Body>
           </View>
 
-          {/* Register Form */}
+          {/* Formulario de Registro */}
           <Card style={styles.card}>
-            <CardHeader style={styles.cardTitle}>Datos del Usuario</CardHeader>
+            <CardHeader style={styles.cardTitle}>Datos de la cuenta</CardHeader>
+            <MicroCopy style={styles.formHint}>
+              El registro solo acepta correos @pascualbravo.edu.co
+            </MicroCopy>
 
             {error ? (
               <View style={styles.errorBanner}>
@@ -110,6 +114,9 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
               value={fullName}
               onChangeText={setFullName}
               autoCapitalize="words"
+              autoComplete="name"
+              textContentType="name"
+              returnKeyType="next"
             />
 
             <Input
@@ -119,6 +126,9 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
               onChangeText={setEmail}
               keyboardType="email-address"
               autoCapitalize="none"
+              autoComplete="email"
+              textContentType="emailAddress"
+              returnKeyType="next"
               helperText={
                 email.length > 0 && !isEmailValidInstitutional
                   ? 'Debe terminar en @pascualbravo.edu.co'
@@ -132,14 +142,22 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
               value={password}
               onChangeText={setPassword}
               secureTextEntry
+              autoComplete="new-password"
+              textContentType="newPassword"
+              returnKeyType="next"
+              helperText="Mínimo 6 caracteres"
             />
 
             <Input
-              label="Confirmar Contraseña"
+              label="Confirmar contraseña"
               placeholder="••••••••"
               value={confirmPassword}
               onChangeText={setConfirmPassword}
               secureTextEntry
+              autoComplete="new-password"
+              textContentType="newPassword"
+              returnKeyType="done"
+              onSubmitEditing={handleRegister}
             />
 
             <Button
@@ -149,7 +167,7 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
               onPress={handleRegister}
               style={styles.submitButton}
             >
-              Crear Cuenta Académica
+              Crear cuenta académica
             </Button>
 
             <Button
@@ -158,19 +176,21 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
               onPress={() => setDemoSession('estudiante')}
               style={styles.skipButton}
             >
-              Omitir registro — ver demo
+              Explorar sin cuenta
             </Button>
           </Card>
 
-          {/* Login Link */}
+          {/* Enlace para Iniciar Sesión */}
           <View style={styles.footer}>
-            <MicroCopy>¿Ya tienes una cuenta institucional?</MicroCopy>
+            <MicroCopy>¿Ya tienes cuenta?</MicroCopy>
             <TouchableOpacity
+              accessibilityRole="link"
               activeOpacity={0.7}
+              hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
               onPress={() => navigation.navigate('Login')}
               style={styles.loginLink}
             >
-              <Text style={styles.loginLinkText}>Inicia sesión aquí</Text>
+              <Text style={styles.loginLinkText}>Iniciar sesión</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
