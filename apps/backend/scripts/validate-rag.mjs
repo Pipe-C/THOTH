@@ -34,7 +34,7 @@ const CASES = [
     id: 'web',
     description: 'Consulta sin cobertura institucional (fallback web)',
     prompt:
-      '¿Cuáles son las noticias tecnológicas más recientes de hoy en Colombia?',
+      '¿Cuál es la cotización actual del dólar frente al peso colombiano hoy?',
     expected: ['web'],
     forbidden: ['institutional'],
   },
