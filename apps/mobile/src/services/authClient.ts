@@ -42,6 +42,8 @@ export interface AuthSession {
   refreshToken?: string;
   expiresAt?: number;
   profile: UserProfileRole;
+  /** True for the local demo session: history stays on the device. */
+  isGuest?: boolean;
 }
 
 interface FirebaseAuthResponse {
