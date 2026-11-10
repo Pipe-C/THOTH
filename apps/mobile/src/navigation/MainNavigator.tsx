@@ -7,13 +7,29 @@ import {
   ChatScreen,
 } from '../screens';
 import { colors } from '../theme/tokens';
+import { useAuth } from '../context/AuthContext';
 
 const Stack = createNativeStackNavigator<MainStackParamList>();
 
+/**
+ * MainNavigator — Decides the initial route based on whether the user
+ * already has a saved profile (session.profile).
+ *
+ * • First login or guest → RoleSelect (profile selection).
+ * • Subsequent logins with a saved profile → Directory directly.
+ */
 export function MainNavigator() {
+  const { session } = useAuth();
+
+  // If the session already carries a confirmed profile, skip RoleSelect
+  // and land directly on Directory. The user can still reach RoleSelect
+  // from the Directory header to switch roles.
+  const hasProfile = Boolean(session?.profile);
+  const initialRoute: keyof MainStackParamList = hasProfile ? 'Directory' : 'RoleSelect';
+
   return (
     <Stack.Navigator
-        initialRouteName="RoleSelect"
+        initialRouteName={initialRoute}
         screenOptions={{
           headerShown: false,
           contentStyle: {
