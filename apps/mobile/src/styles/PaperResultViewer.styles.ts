@@ -38,7 +38,7 @@ export const styles = StyleSheet.create({
     marginTop: 4,
   },
   contentScroll: {
-    maxHeight: 380,
+    paddingVertical: 6,
   },
   scrollContent: {
     paddingVertical: 6,
