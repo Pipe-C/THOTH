@@ -67,6 +67,7 @@ export interface GenerateApiRequest {
   userId: string;
   wordCount?: number;
   subject?: string;
+  antiClicheEnabled?: boolean;
 }
 
 /** Successful response from POST /api/v1/generate */
@@ -117,7 +118,22 @@ export interface GenerationResponse {
   createdAt: string;
 }
 
-export interface DocumentHistoryItem {
+// ─── Chat history ─────────────────────────────────────────────
+
+export interface ChatMessage {
+  id: string;
+  sender: 'user' | 'assistant';
+  content: string;
+  /** Epoch milliseconds; source of truth for ordering and display. */
+  createdAt: number;
+  /** Pre-formatted local time for the current render. */
+  timestamp: string;
+  sourcesUsed?: SourceType[];
+  antiClicheApplied?: boolean;
+  documentType?: DocumentType;
+}
+
+export interface ConversationSummary {
   id: string;
   title: string;
   preview: string;
@@ -125,6 +141,14 @@ export interface DocumentHistoryItem {
   profile: UserProfileRole;
   sourcesUsed: SourceType[];
   createdAt: number;
+  updatedAt: number;
 }
+
+export type ConversationPatch = Partial<
+  Pick<
+    ConversationSummary,
+    'title' | 'preview' | 'documentType' | 'sourcesUsed' | 'updatedAt'
+  >
+>;
 
 export * from './navigation';

@@ -9,30 +9,45 @@ module.exports = {
       colors: {
         // TOTH Academic Serenity Design Tokens
         primary: {
-          DEFAULT: '#2D4A3E', // Deep Moss green: Principal Buttons, headers, active state
+          DEFAULT: '#2D4A3E', // Verde Musgo Profundo: Botones principales, headers, estado activo
           dark: '#22382F',
           light: '#3D6253',
         },
         accent: {
-          DEFAULT: '#C87D55', // Soft terracotta: Toggles ON, loaders, highlight badges
+          DEFAULT: '#C87D55', // Terracota Suave: Toggles ON, loaders, badges destacados
+          strong: '#A65C38',
+          soft: '#F6E7DD',
           dark: '#B06B45',
           light: '#D9936D',
         },
         toth: {
-          moss: '#2D4A3E',       // Deep Moss Green
-          terracotta: '#C87D55', // Soft terracotta
-          cream: '#FDFBF7',      // Warm Cream (Global Background)
-          white: '#FFFFFF',      // Pure White (Surfaces, cards, inputs)
-          slate: '#1E293B',      // Dark slate (Principal Text)
-          ash: '#64748B',        // Ash Grey (Secondary text, subtitles, placeholders)
-          mint: '#E8EFEA',       // Soft mint green (Banners, badge "RAG institucional validado")
-          inactive: '#E2E8F0',   // Inactive Grey (Toggle OFF)
+          moss: '#2D4A3E',       // Verde Musgo Profundo
+          terracotta: '#C87D55', // Terracota Suave
+          cream: '#FDFBF7',      // Crema Cálido (Fondo global)
+          white: '#FFFFFF',      // Blanco Puro (Superficies, cards, inputs)
+          slate: '#1E293B',      // Pizarra Oscuro (Texto principal)
+          ash: '#64748B',        // Gris Ceniza (Texto secundario, subtítulos, placeholders)
+          mint: '#E8EFEA',       // Verde Menta Suave (Banners, badge "RAG institucional validado")
+          inactive: '#E2E8F0',   // Gris Inactivo (Toggle OFF)
         },
         background: '#FDFBF7',
         surface: '#FFFFFF',
+        surfaceMuted: '#F7F3EC',
+        surfaceSunken: '#F1EDE4',
         textPrimary: '#1E293B',
         textSecondary: '#64748B',
         validation: '#E8EFEA',
+        accentStrong: '#A65C38',
+        accentSoft: '#F6E7DD',
+      },
+      spacing: {
+        xs: '4px',
+        sm: '8px',
+        md: '12px',
+        lg: '16px',
+        xl: '20px',
+        xxl: '24px',
+        xxxl: '32px',
       },
       fontFamily: {
         lexend: ['Lexend', 'sans-serif'],
