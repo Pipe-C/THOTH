@@ -11,292 +11,102 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
-import Clipboard from '@react-native-clipboard/clipboard';
-import {
-  ArrowLeft,
-  MessageSquareText,
-  Plus,
-  Send,
-  ShieldCheck,
-} from 'lucide-react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../navigation/types';
-import { CardHeader, Body, MicroCopy } from '../components/Typography';
-import { Card } from '../components/Card';
+import { MainStackParamList } from '../types/navigation';
+import { Display, Body, MicroCopy } from '../components/Typography';
 import { Toggle } from '../components/Toggle';
 import { Badge } from '../components/Badge';
 import { PaperResultViewer } from '../components/PaperResultViewer';
 import { colors } from '../theme/tokens';
-import { ChatMessage, DocumentType, UserProfileRole, toApiDocumentType } from '../types';
+import { ChatMessage, MOCK_INITIAL_MESSAGES } from '../services/mockData';
+import { DocumentType, UserProfileRole, toApiDocumentType } from '../types';
 import { apiClient, isTothApiError } from '../services/apiClient';
 import {
-  appendMessage,
-  createConversation,
-  loadMessages,
-  updateConversation,
-} from '../services/chatRepository';
-import { useAuth } from '../services/AuthContext';
-import {
-  DOCX_MIME_TYPE,
-  PDF_MIME_TYPE,
   exportDocumentToPdf,
   exportDocumentToWord,
-  publishExportedDocument,
   saveLocalRoomDocument,
-  shareExportedDocument,
-  type PublishedDocument,
 } from '../services/nativeBridge';
+import { useAuth } from '../context/AuthContext';
 import { styles } from '../styles/ChatScreen.styles';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'Chat'>;
-
-const DEFAULT_TITLE = 'Nueva Consulta Académica';
-
-function getErrorMessage(err: unknown): string {
-  if (err instanceof Error) return err.message;
-  if (typeof err === 'object' && err !== null && 'message' in err) {
-    return String((err as { message: unknown }).message);
-  }
-  return '';
-}
-
-function formatTime(createdAt: number): string {
-  return new Date(createdAt).toLocaleTimeString([], {
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
-
-function formatResultDate(createdAt: number): string {
-  const date = new Date(createdAt);
-  return `${date.toLocaleDateString([], {
-    day: '2-digit',
-    month: 'short',
-  })}, ${formatTime(createdAt)}`;
-}
-
-let idSequence = 0;
-
-function createId(prefix: string): string {
-  idSequence += 1;
-  return `${prefix}_${Date.now().toString(36)}_${idSequence.toString(36)}`;
-}
-
-function makeConversationTitle(prompt: string, fallback: string): string {
-  if (fallback !== DEFAULT_TITLE) return fallback;
-
-  const compact = prompt.replace(/\s+/g, ' ').trim();
-  if (!compact) return fallback;
-  return compact.length > 64 ? `${compact.slice(0, 61)}...` : compact;
-}
-
-function announceExport(label: string, document: PublishedDocument): void {
-  const location = document.published
-    ? `Guardado en ${document.location}.`
-    : `Archivo generado en:\n${document.location}`;
-
-  Alert.alert(`${label} listo`, location, [
-    {
-      text: 'Compartir',
-      onPress: () => {
-        void shareExportedDocument(document.uri, document.mimeType).catch(() => {
-          Alert.alert('Error', 'No fue posible abrir el menú para compartir el archivo.');
-        });
-      },
-    },
-    { text: 'Aceptar', style: 'cancel' },
-  ]);
-}
+type Props = NativeStackScreenProps<MainStackParamList, 'Chat'>;
 
 export const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
   const { session } = useAuth();
-  const initialConversationId = route.params?.conversationId;
   const activeRole: UserProfileRole = route.params?.activeRole || 'estudiante';
   const initialDocType: DocumentType = route.params?.documentType || 'consulta_libre';
-  const initialTitle = route.params?.initialTitle || DEFAULT_TITLE;
+  const docTitle = route.params?.initialTitle || 'Nueva Consulta Académica';
 
-  const [conversationId, setConversationId] = useState<string | undefined>(
-    initialConversationId,
-  );
-  const [docTitle, setDocTitle] = useState(initialTitle);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>(MOCK_INITIAL_MESSAGES);
   const [inputText, setInputText] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
-  const [isLoadingHistory, setIsLoadingHistory] = useState(
-    Boolean(initialConversationId),
-  );
-  const [historyError, setHistoryError] = useState<string | null>(null);
   const [antiClicheEnabled, setAntiClicheEnabled] = useState(true);
   const [selectedTemplate, setSelectedTemplate] = useState<DocumentType>(initialDocType);
 
   const scrollViewRef = useRef<ScrollView>(null);
-  const persistenceWarningShown = useRef(false);
-
-  useEffect(() => {
-    if (!initialConversationId) {
-      setMessages([]);
-      setIsLoadingHistory(false);
-      return undefined;
-    }
-
-    let isActive = true;
-    setMessages([]);
-    setIsLoadingHistory(true);
-    setHistoryError(null);
-
-    void loadMessages(session, initialConversationId)
-      .then((loaded) => {
-        if (!isActive) return;
-        setMessages(loaded);
-        setConversationId(initialConversationId);
-      })
-      .catch(() => {
-        if (!isActive) return;
-        setHistoryError(
-          'No se pudo cargar esta conversación. Revisa tu sesión o la conexión.',
-        );
-      })
-      .finally(() => {
-        if (isActive) setIsLoadingHistory(false);
-      });
-
-    return () => {
-      isActive = false;
-    };
-  }, [initialConversationId, session]);
 
   useEffect(() => {
     scrollViewRef.current?.scrollToEnd({ animated: true });
   }, [messages, isGenerating]);
 
-  const warnPersistence = () => {
-    if (persistenceWarningShown.current) return;
-    persistenceWarningShown.current = true;
-    Alert.alert(
-      'Historial no guardado',
-      'La respuesta se generó, pero no se pudo guardar la conversación. Revisa tu sesión o la conexión.',
-    );
-  };
-
   const handleSend = () => {
     if (!inputText.trim() || isGenerating) return;
 
-    const currentInput = inputText.trim();
-    const createdAt = Date.now();
-    const activeId = conversationId ?? createId('conv');
-    const isNewConversation = !conversationId;
-    const nextTitle = isNewConversation
-      ? makeConversationTitle(currentInput, docTitle)
-      : docTitle;
-
     const userMsg: ChatMessage = {
-      id: createId('msg'),
+      id: `msg_${Date.now()}`,
       sender: 'user',
-      content: currentInput,
-      createdAt,
-      timestamp: formatTime(createdAt),
+      content: inputText.trim(),
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
 
     setMessages((prev) => [...prev, userMsg]);
+    const currentInput = inputText.trim();
     setInputText('');
     setIsGenerating(true);
 
-    if (isNewConversation) {
-      setConversationId(activeId);
-      setDocTitle(nextTitle);
-    }
-
+    // Phase 4: real call to the RAG + Groq backend
     void (async () => {
-      let canPersist = true;
-
-      try {
-        if (isNewConversation) {
-          await createConversation(session, {
-            id: activeId,
-            title: nextTitle,
-            preview: currentInput.slice(0, 180),
-            documentType: selectedTemplate,
-            profile: activeRole,
-            sourcesUsed: [],
-            createdAt,
-            updatedAt: createdAt,
-          });
-        } else {
-          await updateConversation(session, activeId, {
-            documentType: selectedTemplate,
-            updatedAt: createdAt,
-          });
-        }
-        await appendMessage(session, activeId, userMsg);
-      } catch {
-        canPersist = false;
-        warnPersistence();
-      }
-
       try {
         const result = await apiClient.generate({
           prompt: currentInput,
           profile: activeRole,
           documentType: toApiDocumentType(selectedTemplate),
           userId: session?.uid ?? 'anonymous',
-          antiClicheEnabled,
         });
 
-        const sourcesUsed = result.sources_used.filter(
-          (source): source is 'institutional' | 'web' => source !== 'none',
-        );
-
-        const assistantCreatedAt = Date.now();
         const assistantMsg: ChatMessage = {
-          id: createId('msg'),
+          id: `msg_${Date.now() + 1}`,
           sender: 'assistant',
           content: result.text,
-          createdAt: assistantCreatedAt,
-          timestamp: formatTime(assistantCreatedAt),
-          sourcesUsed,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          sourcesUsed: result.sources_used.filter(
+            (s): s is 'institutional' | 'web' => s !== 'none',
+          ),
           antiClicheApplied: antiClicheEnabled,
           documentType: selectedTemplate,
         };
 
         setMessages((prev) => [...prev, assistantMsg]);
 
-        // Caché offline local (Room/SQLite) vía bridge Kotlin
+        // Saved of SQLite local cache via Room Kotlin bridge
         void saveLocalRoomDocument({
           id: assistantMsg.id,
-          title: nextTitle,
+          title: docTitle,
           content: result.text,
           documentType: selectedTemplate,
           profile: activeRole,
-          createdAt: assistantCreatedAt,
+          createdAt: Date.now(),
         });
-
-        if (canPersist) {
-          try {
-            await appendMessage(session, activeId, assistantMsg);
-            await updateConversation(session, activeId, {
-              preview: result.text.slice(0, 180),
-              documentType: selectedTemplate,
-              sourcesUsed,
-              updatedAt: assistantCreatedAt,
-            });
-          } catch {
-            warnPersistence();
-          }
-        }
       } catch (err) {
         const errorText = isTothApiError(err)
           ? err.message
           : 'Error inesperado al contactar el servidor.';
 
-        const errorCreatedAt = Date.now();
         const errorMsg: ChatMessage = {
-          id: createId('msg'),
+          id: `msg_${Date.now() + 1}`,
           sender: 'assistant',
-          content: `No se pudo completar la consulta: ${errorText}`,
-          createdAt: errorCreatedAt,
-          timestamp: formatTime(errorCreatedAt),
-          sourcesUsed: [],
-          antiClicheApplied: false,
+          content: `⚠️ ${errorText}`,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         };
         setMessages((prev) => [...prev, errorMsg]);
       } finally {
@@ -307,43 +117,34 @@ export const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
 
   const handleExportPdf = async (msg: ChatMessage) => {
     try {
-      const filePath = await exportDocumentToPdf({
+      const path = await exportDocumentToPdf({
         title: docTitle,
         content: msg.content,
       });
-      const document = await publishExportedDocument(filePath, PDF_MIME_TYPE);
-      announceExport('PDF', document);
-    } catch (err) {
-      const detail = getErrorMessage(err);
-      const suffix = detail ? `\n${detail}` : '';
       Alert.alert(
-        'Error',
-        `No fue posible exportar el documento PDF.${suffix}`,
+        'Exportación PDF',
+        `Documento generado con éxito vía Kotlin bridge.\nArchivo: ${path}`,
+        [{ text: 'Aceptar' }],
       );
+    } catch {
+      Alert.alert('Error', 'No fue posible exportar el documento PDF.');
     }
   };
 
   const handleExportDocx = async (msg: ChatMessage) => {
     try {
-      const filePath = await exportDocumentToWord({
+      const path = await exportDocumentToWord({
         title: docTitle,
         content: msg.content,
       });
-      const document = await publishExportedDocument(filePath, DOCX_MIME_TYPE);
-      announceExport('Word (.docx)', document);
-    } catch (err) {
-      const detail = getErrorMessage(err);
-      const suffix = detail ? `\n${detail}` : '';
       Alert.alert(
-        'Error',
-        `No fue posible exportar el documento Word.${suffix}`,
+        'Exportación Word',
+        `Documento Word generado con éxito vía Kotlin bridge.\nArchivo: ${path}`,
+        [{ text: 'Aceptar' }],
       );
+    } catch {
+      Alert.alert('Error', 'No fue posible exportar el documento Word.');
     }
-  };
-
-  const handleCopy = (content: string) => {
-    Clipboard.setString(content);
-    Alert.alert('Copiado', 'Contenido copiado al portapapeles.');
   };
 
   const applyTemplate = (type: DocumentType, promptSnippet: string) => {
@@ -357,23 +158,21 @@ export const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.container}
       >
-        {/* Header Superior del Chat */}
+        {/* Superior Chat Header */}
         <View style={styles.header}>
           <View style={styles.headerRow}>
             <TouchableOpacity
               activeOpacity={0.7}
-              accessibilityRole="button"
-              accessibilityLabel="Volver al directorio"
               onPress={() => navigation.goBack()}
               style={styles.backButton}
             >
-              <ArrowLeft size={20} color={colors.primary} strokeWidth={2} />
+              <Text style={styles.backButtonText}>← Volver</Text>
             </TouchableOpacity>
 
             <View style={styles.headerTitleContainer}>
-              <Text style={styles.headerTitle} numberOfLines={1}>
+              <Display style={styles.headerTitle} numberOfLines={1}>
                 {docTitle}
-              </Text>
+              </Display>
               <MicroCopy style={styles.headerSub}>
                 Modo: {activeRole === 'estudiante' ? 'Estudiante' : 'Docente'} • Groq GPT-OSS 120B
               </MicroCopy>
@@ -385,12 +184,11 @@ export const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
             />
           </View>
 
-          {/* Configuración Rápida Anti-Cliché */}
+          {/* Anti-Cliche fast configuration */}
           <View style={styles.antiClicheBar}>
             <Toggle
               label="Filtro Anti-Cliché"
               description="Elimina muletillas y patrones sintácticos de IA"
-              icon={<ShieldCheck size={18} color={colors.primary} strokeWidth={1.9} />}
               value={antiClicheEnabled}
               onValueChange={setAntiClicheEnabled}
               containerStyle={styles.toggleContainer}
@@ -398,74 +196,67 @@ export const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
           </View>
         </View>
 
-        {/* Chips de Plantillas Rápidas */}
+        {/* Fast templates chips */}
         <View style={styles.templateBar}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.templateScroll}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.templateScroll}
+            keyboardShouldPersistTaps="handled"
+          >
             {activeRole === 'estudiante' ? (
               <>
                 <TouchableOpacity
-                  accessibilityRole="button"
-                  accessibilityLabel="Usar plantilla de informe de laboratorio"
+                  activeOpacity={0.7}
                   onPress={() => applyTemplate('informe_laboratorio', 'Redacta un informe de laboratorio sobre: [tema] siguiendo el syllabus institucional')}
                   style={styles.templateChip}
                 >
-                  <Plus size={13} color={colors.primary} strokeWidth={2.2} />
-                  <Text style={styles.templateChipText}>Informe de Laboratorio</Text>
+                  <Text style={styles.templateChipText}>+ Informe de Laboratorio</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  accessibilityRole="button"
-                  accessibilityLabel="Usar plantilla de ensayo académico"
+                  activeOpacity={0.7}
                   onPress={() => applyTemplate('ensayo', 'Escribe un ensayo académico sobre: [tema] fundamentado en el material institucional')}
                   style={styles.templateChip}
                 >
-                  <Plus size={13} color={colors.primary} strokeWidth={2.2} />
-                  <Text style={styles.templateChipText}>Ensayo Académico</Text>
+                  <Text style={styles.templateChipText}>+ Ensayo Académico</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  accessibilityRole="button"
-                  accessibilityLabel="Usar plantilla de consulta de reglamentos"
+                  activeOpacity={0.7}
                   onPress={() => applyTemplate('consulta_libre', '¿Qué requisitos exige el reglamento estudiantil sobre: [consulta]?')}
                   style={styles.templateChip}
                 >
-                  <Plus size={13} color={colors.primary} strokeWidth={2.2} />
-                  <Text style={styles.templateChipText}>Consulta Reglamentos</Text>
+                  <Text style={styles.templateChipText}>+ Consulta Reglamentos</Text>
                 </TouchableOpacity>
               </>
             ) : (
               <>
                 <TouchableOpacity
-                  accessibilityRole="button"
-                  accessibilityLabel="Usar plantilla de guía de clase"
+                  activeOpacity={0.7}
                   onPress={() => applyTemplate('guia_clase', 'Genera una guía de clase sobre: [tema] para el curso de [asignatura]')}
                   style={styles.templateChip}
                 >
-                  <Plus size={13} color={colors.primary} strokeWidth={2.2} />
-                  <Text style={styles.templateChipText}>Guía de Clase</Text>
+                  <Text style={styles.templateChipText}>+ Guía de Clase</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  accessibilityRole="button"
-                  accessibilityLabel="Usar plantilla de artículo académico"
+                  activeOpacity={0.7}
                   onPress={() => applyTemplate('articulo_investigacion', 'Redacta un artículo académico sobre: [tema] para revisión por pares')}
                   style={styles.templateChip}
                 >
-                  <Plus size={13} color={colors.primary} strokeWidth={2.2} />
-                  <Text style={styles.templateChipText}>Artículo Académico</Text>
+                  <Text style={styles.templateChipText}>+ Artículo Académico</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  accessibilityRole="button"
-                  accessibilityLabel="Usar plantilla de rúbrica de evaluación"
+                  activeOpacity={0.7}
                   onPress={() => applyTemplate('guia_clase', 'Estructura una rúbrica analítica de evaluación para la entrega de [proyecto]')}
                   style={styles.templateChip}
                 >
-                  <Plus size={13} color={colors.primary} strokeWidth={2.2} />
-                  <Text style={styles.templateChipText}>Rúbrica de Evaluación</Text>
+                  <Text style={styles.templateChipText}>+ Rúbrica de Evaluación</Text>
                 </TouchableOpacity>
               </>
             )}
           </ScrollView>
         </View>
 
-        {/* Historial de Mensajes y Entregables */}
+        {/* Messages and deliveries history */}
         <ScrollView
           ref={scrollViewRef}
           style={styles.chatScroll}
@@ -473,46 +264,13 @@ export const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {historyError ? (
-            <View style={styles.historyError}>
-              <Text style={styles.historyErrorText}>{historyError}</Text>
-            </View>
-          ) : null}
-
-          {isLoadingHistory ? (
-            <View style={styles.historyLoading}>
-              <ActivityIndicator size="small" color={colors.primary} />
-              <Text style={styles.generatingText}>Cargando historial...</Text>
-            </View>
-          ) : null}
-
-          {!isLoadingHistory && messages.length === 0 && !historyError ? (
-            <Card style={styles.emptyChatCard}>
-              <View style={styles.emptyChatIcon}>
-                <MessageSquareText size={20} color={colors.primary} strokeWidth={1.8} />
-              </View>
-              <CardHeader style={styles.emptyChatTitle}>
-                Inicia una conversación académica
-              </CardHeader>
-              <Body style={styles.emptyChatBody}>
-                Formula tu consulta y TOTH priorizará el fondo documental del Pascual
-                Bravo antes de complementar con búsqueda web.
-              </Body>
-              <MicroCopy>
-                {session
-                  ? 'Tu historial se guardará en la nube y aparecerá en el directorio.'
-                  : 'Modo invitado: el historial queda guardado en este dispositivo.'}
-              </MicroCopy>
-            </Card>
-          ) : null}
-
           {messages.map((msg) => {
             if (msg.sender === 'user') {
               return (
                 <View key={msg.id} style={styles.userBubbleContainer}>
                   <View style={styles.userBubble}>
-                    <Text style={styles.userBubbleText}>{msg.content}</Text>
-                    <Text style={styles.timestampUser}>{msg.timestamp}</Text>
+                    <Body style={styles.userBubbleText}>{msg.content}</Body>
+                    <MicroCopy style={styles.timestampUser}>{msg.timestamp}</MicroCopy>
                   </View>
                 </View>
               );
@@ -523,12 +281,14 @@ export const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
                 <PaperResultViewer
                   title="Respuesta Académica TOTH"
                   content={msg.content}
-                  sourcesUsed={msg.sourcesUsed ?? []}
-                  antiClicheApplied={msg.antiClicheApplied ?? false}
-                  createdAt={formatResultDate(msg.createdAt)}
+                  sourcesUsed={msg.sourcesUsed || ['institutional']}
+                  antiClicheApplied={msg.antiClicheApplied ?? true}
+                  createdAt={`Hoy, ${msg.timestamp}`}
                   onExportPdf={() => void handleExportPdf(msg)}
                   onExportDocx={() => void handleExportDocx(msg)}
-                  onCopy={() => handleCopy(msg.content)}
+                  onCopy={() => {
+                    Alert.alert('Copiado', 'Contenido copiado al portapapeles.');
+                  }}
                 />
               </View>
             );
@@ -537,33 +297,27 @@ export const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
           {isGenerating && (
             <View style={styles.generatingContainer}>
               <ActivityIndicator size="small" color={colors.accent} />
-              <Text style={styles.generatingText}>
+              <Body style={styles.generatingText}>
                 Consultando RAG institucional y aplicando filtro anti-cliché...
-              </Text>
+              </Body>
             </View>
           )}
         </ScrollView>
 
-        {/* Barra de Entrada de Mensaje */}
+        {/* Message entry bar */}
         <View style={styles.inputBar}>
           <View style={styles.inputContainer}>
             <TextInput
               style={styles.input}
-              accessibilityLabel="Mensaje para TOTH"
               placeholder="Escribe tu consulta o petición académica..."
               placeholderTextColor={colors.textSecondary}
-              selectionColor={colors.primary}
               value={inputText}
               onChangeText={setInputText}
               multiline
               maxLength={1000}
-              textAlignVertical="top"
             />
             <TouchableOpacity
               activeOpacity={0.8}
-              accessibilityRole="button"
-              accessibilityLabel="Enviar consulta"
-              accessibilityState={{ disabled: !inputText.trim() || isGenerating }}
               disabled={!inputText.trim() || isGenerating}
               onPress={handleSend}
               style={[
@@ -571,7 +325,6 @@ export const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
                 (!inputText.trim() || isGenerating) && styles.sendButtonDisabled,
               ]}
             >
-              <Send size={14} color={colors.onAccent} strokeWidth={2} />
               <Text style={styles.sendButtonText}>Enviar</Text>
             </TouchableOpacity>
           </View>

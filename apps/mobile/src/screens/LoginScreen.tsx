@@ -9,28 +9,26 @@ import {
   Platform,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../navigation/types';
-import { Display, Title, CardHeader, Body, MicroCopy } from '../components/Typography';
+import { AuthStackParamList } from '../types/navigation';
+import { Display, Subtitle, CardHeader, Body, MicroCopy } from '../components/Typography';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { Badge } from '../components/Badge';
-import { useAuth, isAuthError } from '../services/AuthContext';
-import type { UserProfileRole } from '../types';
+import { useAuth, isAuthError } from '../context/AuthContext';
 import { styles } from '../styles/LoginScreen.styles';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
+type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 
 export const LoginScreen: React.FC<Props> = ({ navigation }) => {
-  const { login } = useAuth();
   const [email, setEmail] = useState('estudiante.demo@pascualbravo.edu.co');
-  const [password, setPassword] = useState('estudiante2026');
-  const [profile, setProfile] = useState<UserProfileRole>('estudiante');
+  const [password, setPassword] = useState('pascual123');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  const { login, setDemoSession } = useAuth();
+
   const handleLogin = () => {
-    if (isLoading) return;
     setError(null);
     if (!email.trim() || !password.trim()) {
       setError('Por favor completa todos los campos.');
@@ -40,9 +38,7 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
     setIsLoading(true);
     void (async () => {
       try {
-        const session = await login(email.trim(), password, profile);
-        // Navigate passing the profile stored in the session
-        navigation.replace('Directory', { activeRole: session.profile });
+        await login(email.trim(), password);
       } catch (err) {
         setError(
           isAuthError(err)
@@ -55,8 +51,11 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
     })();
   };
 
-  const handleQuickFill = (role: UserProfileRole) => {
-    setProfile(role);
+  const handleSkipDemo = () => {
+    setDemoSession('estudiante');
+  };
+
+  const handleQuickFill = (role: 'estudiante' | 'docente') => {
     if (role === 'estudiante') {
       setEmail('estudiante.demo@pascualbravo.edu.co');
       setPassword('estudiante2026');
@@ -75,25 +74,23 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
-          {/* Header Identitario */}
+          {/* Identity Header */}
           <View style={styles.header}>
             <View style={styles.brandRow}>
               <Display>TOTH</Display>
               <Badge label="I.U. Pascual Bravo" variant="institutional" />
             </View>
-            <Title style={styles.subtitle}>Acceso institucional</Title>
+            <Subtitle style={styles.subtitle}>Iniciar Sesión</Subtitle>
             <Body style={styles.headerDescription}>
-              Entra con tu cuenta del Pascual Bravo para continuar tu historial académico.
+              Asistente de IA generativa académica con filtro anti-cliché y RAG institucional.
             </Body>
           </View>
 
-          {/* Formulario de Login */}
+          {/* Login Form */}
           <Card style={styles.card}>
-            <CardHeader style={styles.cardTitle}>Ingresa con tu cuenta</CardHeader>
-            <MicroCopy style={styles.formHint}>
-              Acceso restringido a correos @pascualbravo.edu.co
-            </MicroCopy>
+            <CardHeader style={styles.cardTitle}>Credenciales Institucionales</CardHeader>
 
             {error ? (
               <View style={styles.errorBanner}>
@@ -108,9 +105,6 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
               onChangeText={setEmail}
               keyboardType="email-address"
               autoCapitalize="none"
-              autoComplete="email"
-              textContentType="emailAddress"
-              returnKeyType="next"
             />
 
             <Input
@@ -119,55 +113,7 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
               value={password}
               onChangeText={setPassword}
               secureTextEntry
-              autoComplete="current-password"
-              textContentType="password"
-              returnKeyType="done"
-              onSubmitEditing={handleLogin}
             />
-
-            <MicroCopy style={styles.roleLabel}>Perfil con el que ingresas</MicroCopy>
-            <View style={styles.roleRow}>
-              <TouchableOpacity
-                activeOpacity={0.7}
-                accessibilityRole="radio"
-                accessibilityLabel="Perfil Estudiante"
-                accessibilityState={{ selected: profile === 'estudiante' }}
-                onPress={() => setProfile('estudiante')}
-                style={[
-                  styles.roleChip,
-                  profile === 'estudiante' && styles.roleChipActive,
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.roleChipText,
-                    profile === 'estudiante' && styles.roleChipTextActive,
-                  ]}
-                >
-                  Estudiante
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                activeOpacity={0.7}
-                accessibilityRole="radio"
-                accessibilityLabel="Perfil Docente"
-                accessibilityState={{ selected: profile === 'docente' }}
-                onPress={() => setProfile('docente')}
-                style={[
-                  styles.roleChip,
-                  profile === 'docente' && styles.roleChipActive,
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.roleChipText,
-                    profile === 'docente' && styles.roleChipTextActive,
-                  ]}
-                >
-                  Docente
-                </Text>
-              </TouchableOpacity>
-            </View>
 
             <Button
               variant="primary"
@@ -176,72 +122,55 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
               onPress={handleLogin}
               style={styles.submitButton}
             >
-              Ingresar al asistente
+              Ingresar al Asistente
             </Button>
 
             <Button
               variant="ghost"
               size="md"
-              onPress={() => navigation.replace('RoleSelect')}
+              onPress={handleSkipDemo}
               style={styles.skipButton}
             >
-              Explorar sin cuenta
+              Omitir inicio de sesión — ver demo
             </Button>
 
-            {/* Accesos rápidos para evaluación docente */}
+            {/* Fast Access for Teacher Evaluation */}
             <View style={styles.demoFillContainer}>
-              <MicroCopy style={styles.demoFillLabel}>Accesos de evaluación</MicroCopy>
+              <MicroCopy style={styles.demoFillLabel}>Acceso rápido para prueba académica:</MicroCopy>
               <View style={styles.demoButtonsRow}>
                 <TouchableOpacity
-                  accessibilityRole="button"
-                  accessibilityLabel="Rellenar credenciales de estudiante demo"
                   activeOpacity={0.7}
                   onPress={() => handleQuickFill('estudiante')}
                   style={styles.demoBadge}
                 >
-                  <Text style={styles.demoBadgeText}>Estudiante demo</Text>
+                  <Text style={styles.demoBadgeText}>Estudiante Demo</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  accessibilityRole="button"
-                  accessibilityLabel="Rellenar credenciales de docente demo"
                   activeOpacity={0.7}
                   onPress={() => handleQuickFill('docente')}
                   style={styles.demoBadge}
                 >
-                  <Text style={styles.demoBadgeText}>Docente demo</Text>
+                  <Text style={styles.demoBadgeText}>Docente Demo</Text>
                 </TouchableOpacity>
               </View>
             </View>
           </Card>
 
-          {/* Enlace para Registro y Selección de Rol */}
+          {/* Register Link */}
           <View style={styles.footer}>
             <View style={styles.footerRow}>
-              <MicroCopy>¿Aún no tienes cuenta?</MicroCopy>
+              <MicroCopy>¿No tienes cuenta institucional?</MicroCopy>
               <TouchableOpacity
-                accessibilityRole="link"
                 activeOpacity={0.7}
-                hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
                 onPress={() => navigation.navigate('Register')}
                 style={styles.registerLink}
               >
-                <Text style={styles.registerLinkText}>Crear cuenta institucional</Text>
+                <Text style={styles.registerLinkText}>Regístrate aquí</Text>
               </TouchableOpacity>
             </View>
-
-            <TouchableOpacity
-              accessibilityRole="link"
-              activeOpacity={0.7}
-              hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
-              onPress={() => navigation.navigate('RoleSelect')}
-              style={styles.roleConfigLink}
-            >
-              <Text style={styles.roleConfigLinkText}>Configurar perfil académico</Text>
-            </TouchableOpacity>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
-

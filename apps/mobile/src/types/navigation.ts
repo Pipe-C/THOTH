@@ -1,10 +1,14 @@
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
-import { UserProfileRole, DocumentType } from '../types';
+import { UserProfileRole, DocumentType } from '../types/index';
 
-export type RootStackParamList = {
+
+export type AuthStackParamList = {
   Login: undefined;
   Register: undefined;
+};
+
+export type MainStackParamList = {
   RoleSelect: { currentRole?: UserProfileRole } | undefined;
   Directory: { activeRole?: UserProfileRole } | undefined;
   Chat: {
@@ -13,9 +17,4 @@ export type RootStackParamList = {
     activeRole?: UserProfileRole;
     initialTitle?: string;
   } | undefined;
-};
-
-export type NavigationProps<T extends keyof RootStackParamList> = {
-  navigation: NativeStackNavigationProp<RootStackParamList, T>;
-  route: RouteProp<RootStackParamList, T>;
 };
