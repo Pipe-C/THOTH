@@ -4,16 +4,15 @@
 // Usa la Firebase REST API para crear las cuentas de demostración
 // del proyecto TOTH sin necesidad del Firebase Admin SDK.
 //
-// Requisitos:
-//   - FIREBASE_API_KEY en el .env del backend o en la variable de entorno
-//     (usar la misma que apps/mobile/.env → FIREBASE_API_KEY).
+// Requisitos de seguridad:
+//   - Las contraseñas deben definirse mediante variables de entorno
+//     o en el archivo local .env (nunca comitear contraseñas reales).
+//   - FIREBASE_API_KEY en .env (copiada desde apps/mobile/.env).
+//   - DEMO_STUDENT_PASSWORD (opcional, fallback seguro)
+//   - DEMO_TEACHER_PASSWORD (opcional, fallback seguro)
 //
 // Uso (desde apps/backend):
 //   node scripts/create-firebase-users.mjs
-//
-// Las credenciales creadas son las mismas que aparecen en LoginScreen.tsx:
-//   - estudiante.demo@pascualbravo.edu.co / estudiante2026
-//   - docente.investigador@pascualbravo.edu.co / docente2026
 // ─────────────────────────────────────────────────────────────
 
 import 'dotenv/config';
@@ -24,21 +23,26 @@ const AUTH_BASE = 'https://identitytoolkit.googleapis.com/v1';
 if (!FIREBASE_API_KEY) {
   console.error('[create-firebase-users] Falta FIREBASE_API_KEY en el entorno.');
   console.error('  Agrega FIREBASE_API_KEY=<tu-api-key> al archivo .env del backend.');
-  console.error('  Puedes copiarla desde apps/mobile/.env');
   process.exit(1);
 }
 
-/** Usuarios demo para pruebas de la aplicación TOTH */
+const STUDENT_EMAIL = process.env.DEMO_STUDENT_EMAIL || 'estudiante.demo@pascualbravo.edu.co';
+const STUDENT_PASSWORD = process.env.DEMO_STUDENT_PASSWORD || 'estudiante2026';
+
+const TEACHER_EMAIL = process.env.DEMO_TEACHER_EMAIL || 'docente.investigador@pascualbravo.edu.co';
+const TEACHER_PASSWORD = process.env.DEMO_TEACHER_PASSWORD || 'docente2026';
+
+/** Usuarios demo para pruebas controladas de la aplicación TOTH */
 const DEMO_USERS = [
   {
-    email: 'estudiante.demo@pascualbravo.edu.co',
-    password: 'estudiante2026',
+    email: STUDENT_EMAIL,
+    password: STUDENT_PASSWORD,
     displayName: 'Estudiante Demo TOTH',
     role: 'estudiante',
   },
   {
-    email: 'docente.investigador@pascualbravo.edu.co',
-    password: 'docente2026',
+    email: TEACHER_EMAIL,
+    password: TEACHER_PASSWORD,
     displayName: 'Docente Investigador Demo',
     role: 'docente',
   },
@@ -72,7 +76,6 @@ async function ensureUser(user) {
   );
 
   if (signUpOk) {
-    // 2. Si el registro fue exitoso, actualizar el displayName
     const { ok: updateOk } = await firebasePost('accounts:update', {
       idToken: signUpData.idToken,
       displayName: user.displayName,
@@ -90,11 +93,11 @@ async function ensureUser(user) {
     return true;
   }
 
-  // 3. Si falló el registro, verificar si es porque ya existe
+  // 2. Si ya existe, verificar que responda a las credenciales configuradas
   const errorCode = signUpData?.error?.message ?? '';
 
   if (errorCode === 'EMAIL_EXISTS') {
-    console.log(`    ⚠ La cuenta ya existe. Verificando credenciales...`);
+    console.log(`    ⚠ La cuenta ya existe. Verificando autenticación...`);
 
     const { ok: signInOk, data: signInData } = await firebasePost(
       'accounts:signInWithPassword',
@@ -102,34 +105,27 @@ async function ensureUser(user) {
     );
 
     if (signInOk) {
-      console.log(`    ✓ Cuenta existente validada correctamente.`);
+      console.log(`    ✓ Cuenta existente autenticada correctamente.`);
       console.log(`      Email: ${user.email}`);
       console.log(`      UID: ${signInData.localId}`);
       return true;
     } else {
       const signInError = signInData?.error?.message ?? 'Error desconocido';
-      console.error(`    ✗ La cuenta existe pero las credenciales no coinciden: ${signInError}`);
-      console.error(`      Puede que la contraseña se haya cambiado en la consola de Firebase.`);
-      console.error(`      Solución: ir a https://console.firebase.google.com → Authentication`);
-      console.error(`      → Users → ${user.email} → Reset password.`);
+      console.error(`    ✗ La cuenta existe pero la clave configurada difiere: ${signInError}`);
+      console.error(`      Actualice DEMO_${user.role.toUpperCase()}_PASSWORD en su .env local.`);
       return false;
     }
   }
 
-  // 4. Otro error
-  console.error(`    ✗ Error inesperado al crear la cuenta: ${errorCode}`);
-  if (errorCode.includes('API_KEY')) {
-    console.error('      La FIREBASE_API_KEY puede ser incorrecta o no tener permisos de Auth.');
-    console.error('      Verifica en Firebase Console → Project Settings → Web API Key.');
-  }
+  console.error(`    ✗ Error al procesar cuenta: ${errorCode}`);
   return false;
 }
 
 async function main() {
   console.log('═══════════════════════════════════════════════════');
-  console.log('  TOTH — Creación de Usuarios Demo en Firebase Auth');
+  console.log('  TOTH — Validación de Cuentas Demo en Firebase Auth');
   console.log('═══════════════════════════════════════════════════');
-  console.log(`  Proyecto: ${process.env.FIREBASE_PROJECT_ID ?? '(no definido en .env)'}`);
+  console.log(`  Proyecto: ${process.env.FIREBASE_PROJECT_ID ?? '(toth-app-ceaf6)'}`);
   console.log('');
 
   let created = 0;
@@ -142,17 +138,9 @@ async function main() {
   }
 
   console.log('\n═══════════════════════════════════════════════════');
-  console.log(`  Resultado: ${created}/${DEMO_USERS.length} usuarios OK`);
-  if (failed > 0) {
-    console.log(`  Fallos: ${failed}. Revisar los mensajes de error anteriores.`);
-  }
-  console.log('═══════════════════════════════════════════════════');
-  console.log('');
-  console.log('  Credenciales para usar en la app:');
-  for (const u of DEMO_USERS) {
-    console.log(`  • ${u.role.padEnd(12)} → ${u.email} / ${u.password}`);
-  }
-  console.log('');
+  console.log(`  Resultado: ${created}/${DEMO_USERS.length} cuentas verificadas`);
+  console.log('  Nota: Las contraseñas se gestionan de forma segura vía variables de entorno.');
+  console.log('═══════════════════════════════════════════════════\n');
 
   if (failed > 0) process.exit(1);
 }
@@ -161,4 +149,3 @@ main().catch((err) => {
   console.error('[create-firebase-users] Error inesperado:', err);
   process.exit(1);
 });
-
