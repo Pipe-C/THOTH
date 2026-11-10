@@ -40,15 +40,14 @@ capas de diseño sobre el LLM:
 | 2 | Pantallas de flujo principal (mock data) | ✅ Completa |
 | 3 | Backend: Vercel + Groq + Supabase RAG | ✅ Completa |
 | 4 | Integración real frontend-backend + puente Kotlin | ✅ Completa |
-| 5 | Integración y validación final | 🟡 Anti-cliché y fallback web validados con Groq/Tavily reales y E2E OK; RAG institucional/productivo pendiente de restaurar Supabase y redesplegar |
+| 5 | Integración y validación final | ✅ Anti-cliché, fallback web y RAG 3/3 en producción; E2E y exportaciones OK |
 
 > El detalle completo de cada fase, criterios de aceptación y decisiones de arquitectura
 > vive en el documento interno de directivas del agente (no versionado en este repo).
 >
-> **Nota 2026-11-06:** el proyecto Supabase `xrbezcimbdpnmfzevprb` no resuelve DNS
-> (`NXDOMAIN`), por lo que el RAG institucional productivo está caído. El backend local
-> ya degrada a búsqueda web, pero el deploy productivo con ese fallback está pendiente de
-> confirmación. Ver `estado_proyecto_toth.md`, sección 7.
+> **Nota 2026-11-09:** producción restaurada. `GET /api/v1/health` → `healthy` y
+> `npm run validate:rag` → **3/3** (institucional, web y mixto). Ver
+> `estado_proyecto_toth.md`, sección 7.
 
 ---
 

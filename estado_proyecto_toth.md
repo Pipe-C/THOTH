@@ -1,6 +1,6 @@
 # Estado del proyecto TOTH
 
-> Actualizado: 2026-11-06. Este documento resume el estado verificable del repo;
+> Actualizado: 2026-11-09. Este documento resume el estado verificable del repo;
 > las directivas completas viven en `AGENTS.md` y `COMPORTAMIENTO_DEL_ASISTENTE.md`.
 
 ## 1. Resumen
@@ -8,7 +8,7 @@
 | Fase | Estado |
 | :--- | :--- |
 | 0–4 (scaffold, UI, backend, integración + Kotlin) | ✅ Completas |
-| 5 (validación final) | 🟡 Anti-cliché y fallback web validados con Groq/Tavily reales; RAG institucional y producción bloqueados por la caída DNS de Supabase |
+| 5 (validación final) | ✅ Anti-cliché, fallback web y RAG 3/3 en producción; E2E y exportaciones OK |
 
 El monorepo (`apps/mobile`, `apps/backend`) usa npm workspaces. Rama de trabajo:
 `develop`. Backend desplegado en `https://thoth-backend.vercel.app`.
@@ -101,8 +101,8 @@ El monorepo (`apps/mobile`, `apps/backend`) usa npm workspaces. Rama de trabajo:
   web real: **2/2 OK**. `npm run lint` (tsc --noEmit): OK.
 - 2026-11-06 — `npx tsc --noEmit` (mobile): OK. `assembleRelease`: BUILD SUCCESSFUL.
   APK instalada en Pixel 7 (Android 17) y flujo E2E validado por `uiautomator dump`.
-- 2026-11-06 — `GET https://thoth-backend.vercel.app/api/v1/health` responde 503
-  `degraded` con `supabase: false`, `groq: true` (ver sección 7).
+- 2026-11-09 — Producción: `GET /api/v1/health` → **healthy** (`supabase: true`,
+  `groq: true`); `npm run validate:rag` → **3/3 OK** (institucional, web y mixto).
 - `npm test` (backend, histórico): **100/100**.
 - `npm run lint` (backend, `tsc --noEmit`): OK.
 - `npx tsc --noEmit` (mobile): OK.
@@ -142,19 +142,14 @@ El monorepo (`apps/mobile`, `apps/backend`) usa npm workspaces. Rama de trabajo:
 
 ## 4. Pendientes
 
-1. **Restaurar Supabase** (proyecto `xrbezcimbdpnmfzevprb`): el host no resuelve DNS
-   (`NXDOMAIN`). Actualizar `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY` en `.env` y en
-   Vercel, y volver a desplegar el backend.
-2. **Desplegar el backend** con el fallback web (`fix(rag)`) y verificar `/health`
-   (`healthy`) y `npm run validate:rag` (3/3). Requiere confirmación explícita.
-3. Aplicar `0004_drop_users_table.sql` cuando Supabase esté operativo y verificar que no
-   queden referencias a `public.users`.
-4. Rotar la Supabase Secret key expuesta previamente y actualizarla en Vercel y `.env`.
-5. Pushear los commits locales de `develop` y abrir PR `develop` → `main`.
-6. Añadir notificaciones push con FCM (requiere `google-services.json` y cuenta de
+1. Aplicar `0004_drop_users_table.sql` y verificar que no queden referencias a
+   `public.users`.
+2. Rotar la Supabase Secret key expuesta previamente y actualizarla en Vercel y `.env`.
+   La publishable key compartida no sustituye a la service role key.
+3. Añadir notificaciones push con FCM (requiere `google-services.json` y cuenta de
    servicio de Firebase) y evaluar verificación de correo institucional.
-7. Cargar documentos institucionales reales en `apps/backend/documents/` y ejecutar
-   `npm run ingest` cuando Supabase esté disponible.
+4. Cargar documentos institucionales reales en `apps/backend/documents/` y ejecutar
+   `npm run ingest`.
 
 ## 5. Commits realizados (por capas)
 
@@ -182,18 +177,9 @@ El monorepo (`apps/mobile`, `apps/backend`) usa npm workspaces. Rama de trabajo:
 22. `feat(mobile): rediseña pantallas del flujo académico`
 23. `test(backend): valida anti-cliché y fallback web con servicios reales`
 24. `chore: ignora credenciales de Firebase y keystores`
+25. `docs: registra producción healthy y RAG 3/3`
 
 > No se hace `git push` sin confirmación explícita.
-
-## 7. Bloqueo actual (2026-11-06)
-
-- `xrbezcimbdpnmfzevprb.supabase.co` no resuelve (`NXDOMAIN` desde 8.8.8.8).
-  El backend productivo responde `503 degraded` (`supabase: false`, `groq: true`).
-- El código local ya degrada a web/none y se validó en vivo con Tavily/Groq, pero
-  **producción sigue ejecutando la versión anterior** hasta que se autorice el deploy.
-- La app móvil instalada muestra el error de base vectorial porque apunta al backend
-  productivo. Al restaurar Supabase y redesplegar, el flujo RAG vuelve a funcionar sin
-  cambios adicionales en la app.
 
 ## 6. Notas de entorno
 
@@ -204,3 +190,16 @@ El monorepo (`apps/mobile`, `apps/backend`) usa npm workspaces. Rama de trabajo:
   No afecta a un emulador API 34 ni a dispositivos convencionales.
 - PowerShell 5.1 muestra mojibake al leer archivos UTF-8; el contenido del repo es
   correcto (verificado en DOCX y README).
+
+## 7. Producción (2026-11-09)
+
+- Supabase volvió a resolver DNS (`xrbezcimbdpnmfzevprb.supabase.co` → Cloudflare).
+- Backend redesplegado a producción: `dpl_5NpurVNEeQE3zo4pro2o7zptz638`.
+- `GET https://thoth-backend.vercel.app/api/v1/health` → **healthy**
+  (`supabase: true`, `groq: true`).
+- `npm run validate:rag` contra producción → **3/3 OK**:
+  institucional, web y mixto, sin clichés detectados.
+- La app móvil ya no muestra el error de base vectorial: el flujo RAG híbrido
+  institucional + web vuelve a estar operativo.
+- El backend usa `SUPABASE_SERVICE_ROLE_KEY` (secreto). La publishable key es
+  client-side y no debe configurarse como service role.
