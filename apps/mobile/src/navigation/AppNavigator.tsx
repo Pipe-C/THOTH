@@ -1,8 +1,8 @@
-import React from "react";
-import { NavigationContainer, DefaultTheme } from "@react-navigation/native";
-import { AuthNavigator } from "./AuthNavigator";
-import { MainNavigator } from "./MainNavigator";
-import { useAuth } from "../context/AuthContext";
+import React from 'react';
+import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
+import { AuthNavigator } from './AuthNavigator';
+import { MainNavigator } from './MainNavigator';
+import { useAuth } from '../context/AuthContext';
 import { colors } from '../theme/tokens';
 
 const TothNavigationTheme = {
@@ -17,16 +17,16 @@ const TothNavigationTheme = {
   },
 };
 
-export function AppNavigator(){
-  const { user, loading } = useAuth();
+export function AppNavigator() {
+  const { session, isLoading } = useAuth();
 
-  if (loading) {
+  if (isLoading) {
     return null;
   }
 
   return (
-    <NavigationContainer  theme={TothNavigationTheme}>
-      {user ? <MainNavigator /> : <AuthNavigator />}
+    <NavigationContainer theme={TothNavigationTheme}>
+      {session ? <MainNavigator /> : <AuthNavigator />}
     </NavigationContainer>
   );
 }

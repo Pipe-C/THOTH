@@ -1,5 +1,5 @@
 ﻿// -----------------------------------------------------------------
-// src/services/AuthContext.tsx — Global auth state
+// src/context/AuthContext.tsx — Global auth state
 // -----------------------------------------------------------------
 // React context that holds the current user session and exposes
 // login / register / logout actions. Screens read from here instead
@@ -12,7 +12,6 @@ import React, {
   useState,
   ReactNode,
   useEffect,
-  type ReactNode,
 } from 'react';
 import {
   signIn,
@@ -22,7 +21,7 @@ import {
   isAuthError,
   type AuthSession,
   type AuthError,
-} from './authClient';
+} from '../services/authClient';
 import type { UserProfileRole } from '../types';
 
 // ─── Context type ─────────────────────────────────────────────
@@ -46,6 +45,8 @@ interface AuthContextValue {
   ) => Promise<AuthSession>;
   /** Clears the session and redirects to Login */
   logout: () => Promise<void>;
+  /** Sets a demo session for skip / demo mode */
+  setDemoSession: (role?: UserProfileRole) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -89,15 +90,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession(null);
   };
 
+  const setDemoSession = (role: UserProfileRole = 'estudiante') => {
+    setSession({
+      uid: 'demo_user_123',
+      email: role === 'docente' ? 'docente.demo@pascualbravo.edu.co' : 'estudiante.demo@pascualbravo.edu.co',
+      profile: role,
+      idToken: 'MOCK_DEMO_TOKEN',
+    });
+  };
+
   return (
-    <AuthContext.Provider value={{ session, isLoading, login, register, logout }}>
+    <AuthContext.Provider
+      value={{ session, isLoading, login, register, logout, setDemoSession }}
+    >
       {children}
     </AuthContext.Provider>
   );
 }
-
-export function useAuth() {
-  const context = useContext(AuthContext);
 
 /**
  * Returns the current auth context.

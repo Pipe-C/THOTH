@@ -15,17 +15,18 @@ import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { Badge } from '../components/Badge';
+import { useAuth, isAuthError } from '../context/AuthContext';
 import { styles } from '../styles/RegisterScreen.styles';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Register'>;
 
 export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
-  const { register } = useAuth();
+  const { register, setDemoSession } = useAuth();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [selectedProfile, setSelectedProfile] = useState<'estudiante' | 'docente'>('estudiante');
+  const [selectedProfile] = useState<'estudiante' | 'docente'>('estudiante');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -42,15 +43,15 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
       return;
     }
     if (!isEmailValidInstitutional) {
-      setError('El registro esta restringido a correos institucionales @pascualbravo.edu.co');
+      setError('El registro está restringido a correos institucionales @pascualbravo.edu.co');
       return;
     }
     if (password.length < 6) {
-      setError('La contrasena debe tener al menos 6 caracteres.');
+      setError('La contraseña debe tener al menos 6 caracteres.');
       return;
     }
     if (password !== confirmPassword) {
-      setError('Las contrasenas no coinciden.');
+      setError('Las contraseñas no coinciden.');
       return;
     }
 
@@ -58,7 +59,6 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
     void (async () => {
       try {
         await register(email.trim(), password, fullName.trim(), selectedProfile);
-        navigation.replace('RoleSelect', { currentRole: selectedProfile });
       } catch (err) {
         setError(
           isAuthError(err)
@@ -94,7 +94,7 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
             </Body>
           </View>
 
-          {/* Register Formulary */}
+          {/* Register Form */}
           <Card style={styles.card}>
             <CardHeader style={styles.cardTitle}>Datos del Usuario</CardHeader>
 
@@ -155,7 +155,7 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
             <Button
               variant="ghost"
               size="md"
-              onPress={() => navigation.replace('RoleSelect')}
+              onPress={() => setDemoSession('estudiante')}
               style={styles.skipButton}
             >
               Omitir registro — ver demo

@@ -15,7 +15,7 @@ import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { Badge } from '../components/Badge';
-import { useAuth, isAuthError } from '../services/AuthContext';
+import { useAuth, isAuthError } from '../context/AuthContext';
 import { styles } from '../styles/LoginScreen.styles';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
@@ -26,7 +26,7 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const { login } = useAuth();
+  const { login, setDemoSession } = useAuth();
 
   const handleLogin = () => {
     setError(null);
@@ -38,9 +38,7 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
     setIsLoading(true);
     void (async () => {
       try {
-        const session = await login(email.trim(), password);
-        // Navigate passing the profile stored in the session
-        navigation.replace('Directory', { activeRole: session.profile });
+        await login(email.trim(), password);
       } catch (err) {
         setError(
           isAuthError(err)
@@ -51,6 +49,10 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
         setIsLoading(false);
       }
     })();
+  };
+
+  const handleSkipDemo = () => {
+    setDemoSession('estudiante');
   };
 
   const handleQuickFill = (role: 'estudiante' | 'docente') => {
@@ -86,7 +88,7 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
             </Body>
           </View>
 
-          {/* Login Formulary*/}
+          {/* Login Form */}
           <Card style={styles.card}>
             <CardHeader style={styles.cardTitle}>Credenciales Institucionales</CardHeader>
 
@@ -126,7 +128,7 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
             <Button
               variant="ghost"
               size="md"
-              onPress={handleLogin}
+              onPress={handleSkipDemo}
               style={styles.skipButton}
             >
               Omitir inicio de sesión — ver demo
@@ -154,7 +156,7 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
             </View>
           </Card>
 
-          {/* Register Link and Rol Selection */}
+          {/* Register Link */}
           <View style={styles.footer}>
             <View style={styles.footerRow}>
               <MicroCopy>¿No tienes cuenta institucional?</MicroCopy>
@@ -166,14 +168,6 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
                 <Text style={styles.registerLinkText}>Regístrate aquí</Text>
               </TouchableOpacity>
             </View>
-
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={handleLogin} // Skip with actual credentials
-              style={styles.roleConfigLink}
-            >
-              <Text style={styles.roleConfigLinkText}>Configurar Perfil Académico (Estudiante / Docente)</Text>
-            </TouchableOpacity>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
