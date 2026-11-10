@@ -355,6 +355,7 @@ export const ChatScreen: React.FC<Props> = ({ navigation, route }) => {
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        enabled={Platform.OS === 'ios'}
         style={styles.container}
       >
         {/* Header Superior del Chat */}
