@@ -7,21 +7,30 @@ import {
   TouchableOpacity,
   FlatList,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
+import {
+  ChevronDown,
+  ChevronRight,
+  LogIn,
+  LogOut,
+  MessageSquareText,
+  Plus,
+} from 'lucide-react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useFocusEffect } from '@react-navigation/native';
-import { RootStackParamList } from '../navigation/types';
-import { CardHeader, MicroCopy } from '../components/Typography';
+import { MainStackParamList } from '../types/navigation';
+import { Body, CardHeader, MicroCopy } from '../components/Typography';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { Badge } from '../components/Badge';
 import { loadConversations } from '../services/chatRepository';
-import { useAuth } from '../services/AuthContext';
+import { useAuth } from '../context/AuthContext';
 import { colors } from '../theme/tokens';
 import { ConversationSummary, DocumentType, UserProfileRole } from '../types';
 import { styles } from '../styles/DirectoryScreen.styles';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'Directory'>;
+type Props = NativeStackScreenProps<MainStackParamList, 'Directory'>;
 
 const DOC_FILTERS: ReadonlyArray<{
   value: 'all' | DocumentType;
@@ -81,10 +90,13 @@ function EmptyHistory({
 
   return (
     <Card style={styles.emptyCard}>
+      <View style={styles.emptyIcon}>
+        <MessageSquareText size={20} color={colors.primary} strokeWidth={1.8} />
+      </View>
       <CardHeader style={styles.emptyTitle}>{title}</CardHeader>
-      <MicroCopy style={styles.emptySubtitle}>
+      <Body style={styles.emptyBody}>
         {error ?? defaultMessage}
-      </MicroCopy>
+      </Body>
     </Card>
   );
 }
@@ -101,6 +113,8 @@ function ConversationCard({
   return (
     <TouchableOpacity
       activeOpacity={0.85}
+      accessibilityRole="button"
+      accessibilityLabel={`Abrir conversación: ${item.title}`}
       onPress={() => onOpen(item)}
       style={styles.docItemCard}
     >
@@ -128,14 +142,18 @@ function ConversationCard({
         <MicroCopy>
           Perfil: {item.profile === 'estudiante' ? 'Estudiante' : 'Docente'}
         </MicroCopy>
-        <Text style={styles.openHint}>Abrir conversación →</Text>
+        <View style={styles.openHintRow}>
+          <Text style={styles.openHint}>Abrir</Text>
+          <ChevronRight size={14} color={colors.accentStrong} strokeWidth={2.2} />
+        </View>
       </View>
     </TouchableOpacity>
   );
 }
 
 export const DirectoryScreen: React.FC<Props> = ({ navigation, route }) => {
-  const { session } = useAuth();
+  const { session, logout } = useAuth();
+  const isGuest = session?.isGuest === true;
   const activeRole: UserProfileRole =
     route.params?.activeRole || session?.profile || 'estudiante';
   const [selectedFilter, setSelectedFilter] = useState<'all' | DocumentType>('all');
@@ -160,9 +178,9 @@ export const DirectoryScreen: React.FC<Props> = ({ navigation, route }) => {
           if (!isActive) return;
           setItems([]);
           setLoadError(
-            session
-              ? 'No se pudo cargar el historial desde Firestore.'
-              : 'No se pudo leer el historial local de este dispositivo.',
+            isGuest || !session
+              ? 'No se pudo leer el historial local de este dispositivo.'
+              : 'No se pudo cargar el historial desde Firestore.',
           );
         })
         .finally(() => {
@@ -189,7 +207,8 @@ export const DirectoryScreen: React.FC<Props> = ({ navigation, route }) => {
     });
   };
 
-  const displayEmail = session?.email ?? 'Invitado · historial local';
+  const displayEmail =
+    isGuest || !session ? 'Invitado · historial local' : session.email;
 
   const handleNewChat = () => {
     navigation.navigate('Chat', {
@@ -198,24 +217,52 @@ export const DirectoryScreen: React.FC<Props> = ({ navigation, route }) => {
     });
   };
 
+  const handleLogout = () => {
+    Alert.alert(
+      'Cerrar sesión',
+      '¿Seguro que deseas salir de tu cuenta institucional?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Cerrar sesión',
+          style: 'destructive',
+          onPress: () => {
+            // Clearing the session makes AppNavigator render AuthNavigator.
+            void logout();
+          },
+        },
+      ],
+    );
+  };
+
+  const handleExitGuest = () => {
+    // Clearing the guest session returns to the institutional login.
+    void logout();
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         {/* Header Superior con Perfil */}
         <View style={styles.header}>
           <View style={styles.headerTop}>
-            <View>
+            <View style={styles.identityBlock}>
               <Text style={styles.appTitle}>TOTH</Text>
-              <MicroCopy style={styles.userEmail}>{displayEmail}</MicroCopy>
+              <MicroCopy style={styles.userEmail} numberOfLines={1}>
+                {displayEmail}
+              </MicroCopy>
             </View>
             <TouchableOpacity
               activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel="Cambiar perfil académico"
               onPress={() => navigation.navigate('RoleSelect', { currentRole: activeRole })}
               style={styles.profileBadge}
             >
               <Text style={styles.profileBadgeText}>
-                Rol: {activeRole === 'estudiante' ? 'Estudiante' : 'Docente'} ▾
+                Rol: {activeRole === 'estudiante' ? 'Estudiante' : 'Docente'}
               </Text>
+              <ChevronDown size={14} color={colors.primary} strokeWidth={2} />
             </TouchableOpacity>
           </View>
 
@@ -223,11 +270,33 @@ export const DirectoryScreen: React.FC<Props> = ({ navigation, route }) => {
             <Button
               variant="primary"
               size="md"
+              leftIcon={<Plus size={16} color={colors.surface} strokeWidth={2.4} />}
               onPress={handleNewChat}
               style={styles.newChatButton}
             >
-              + Nueva Consulta Académica
+              Nueva consulta
             </Button>
+            {isGuest || !session ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                accessibilityLabel="Iniciar sesión"
+                leftIcon={<LogIn size={15} color={colors.textSecondary} strokeWidth={1.9} />}
+                onPress={handleExitGuest}
+              >
+                Iniciar sesión
+              </Button>
+            ) : (
+              <Button
+                variant="ghost"
+                size="sm"
+                accessibilityLabel="Cerrar sesión"
+                leftIcon={<LogOut size={15} color={colors.textSecondary} strokeWidth={1.9} />}
+                onPress={handleLogout}
+              >
+                Salir
+              </Button>
+            )}
           </View>
         </View>
 
@@ -243,6 +312,8 @@ export const DirectoryScreen: React.FC<Props> = ({ navigation, route }) => {
               return (
                 <TouchableOpacity
                   key={filter.value}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: isActive }}
                   onPress={() => setSelectedFilter(filter.value)}
                   style={[
                     styles.filterChip,
@@ -271,11 +342,12 @@ export const DirectoryScreen: React.FC<Props> = ({ navigation, route }) => {
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
+          removeClippedSubviews={false}
           ListEmptyComponent={
             <EmptyHistory
               isLoading={isLoadingDocs}
               error={loadError}
-              isGuest={!session}
+              isGuest={isGuest || !session}
             />
           }
           renderItem={({ item }) => (

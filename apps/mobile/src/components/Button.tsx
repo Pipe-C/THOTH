@@ -93,7 +93,9 @@ export const Button: React.FC<ButtonProps> = ({
 
   return (
     <TouchableOpacity
-      activeOpacity={0.8}
+      activeOpacity={0.82}
+      accessibilityRole="button"
+      accessibilityState={{ busy: isLoading, disabled: disabled || isLoading }}
       disabled={disabled || isLoading}
       style={[
         styles.base,

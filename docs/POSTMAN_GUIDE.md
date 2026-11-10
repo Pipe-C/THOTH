@@ -1,6 +1,6 @@
 ﻿# Guia de configuracion en Postman -- TOTH API v1
 
-> Propósito: describir como importar, configurar y probar los 5 endpoints del
+> Propósito: describir como importar, configurar y probar los 3 endpoints del
 > backend de TOTH desde Postman de forma ordenada y reproducible.
 
 ---
@@ -75,10 +75,7 @@ Todos los endpoints devuelven JSON con la misma forma canonica.
 |:--------------------|:----:|:-------------------------------------------|
 | MISSING_FIELDS      | 400  | Faltan campos requeridos en el body         |
 | VALIDATION_ERROR    | 400  | Valor de campo invalido (enum, formato)     |
-| INVALID_DOMAIN      | 400  | Email no es @pascualbravo.edu.co            |
-| UNAUTHORIZED        | 400  | Credenciales invalidas en auth/login        |
-| TOKEN_EXPIRED       | —    | No implementado (RAG aun no valida tokens)  |
-| FORBIDDEN           | —    | No implementado todavia                     |
+
 | METHOD_NOT_ALLOWED  | 405  | Verbo HTTP incorrecto para la ruta          |
 | RATE_LIMIT_EXCEEDED | 429  | Demasiadas solicitudes en poco tiempo       |
 | LLM_ERROR           | 502  | Error de comunicacion con Groq              |
@@ -121,12 +118,11 @@ como variable, asi que tambien funciona sin importar el environment.
 
 1. En la barra lateral: Collections > + > Blank Collection.
 2. Nombra la coleccion TOTH API v1.
-3. Crea estas carpetas dentro: Health, Auth, RAG.
+3. Crea estas carpetas dentro: Health y RAG.
 
-> **Estado del auth:** el codigo de `develop` persiste y valida usuarios en
-> Supabase. La instancia de produccion puede seguir respondiendo con `uid` mock
-> hasta el proximo deploy del backend. Los endpoints RAG son publicos y no
-> validan `Authorization`.
+> La autenticacion vive en Firebase Auth dentro de la app movil. El backend
+> expone solo Health y los endpoints publicos de RAG; no validan
+> `Authorization`.
 
 ---
 
@@ -186,123 +182,7 @@ degradado esta en data.status. Esto permite distinguir entre API inalcanzable
 
 ---
 
-### 4.2  POST /api/v1/auth/register
-
-Carpeta: Auth
-Proposito: registrar un nuevo usuario con email institucional. El usuario se
-persiste en la tabla `users` de Supabase (migracion
-`0003_create_users_table.sql`) y la contrasena se guarda como hash scrypt.
-
-Configuracion en Postman:
-
-| Campo   | Valor                                               |
-|:--------|:----------------------------------------------------|
-| Metodo  | POST                                                |
-| URL     | {{base_url}}/api/{{api_version}}/auth/register      |
-| Header  | Content-Type: application/json                      |
-
-Body (tab Body > raw > JSON):
-
-    {
-      "email": "estudiante.prueba@pascualbravo.edu.co",
-      "password": "MiPassword123",
-      "displayName": "Estudiante de Prueba",
-      "profile": "estudiante"
-    }
-
-Campos del body:
-
-| Campo       | Tipo              | Req | Descripcion                          |
-|:------------|:------------------|:---:|:-------------------------------------|
-| email       | string            | Si  | Debe terminar en @pascualbravo.edu.co|
-| password    | string            | Si  | Minimo 8 caracteres                  |
-| displayName | string            | Si  | Nombre visible del usuario           |
-| profile     | estudiante/docente | Si | Perfil de uso                        |
-
-Respuesta exitosa - 201 Created:
-
-    {
-      "ok": true,
-      "version": "v1",
-      "data": {
-        "uid": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
-        "email": "estudiante.prueba@pascualbravo.edu.co",
-        "displayName": "Estudiante de Prueba",
-        "profile": "estudiante",
-        "createdAt": "2026-10-22T19:05:00.000Z"
-      }
-    }
-
-Errores esperados:
-
-| Escenario                      | Code             | HTTP |
-|:-------------------------------|:-----------------|:----:|
-| Email con dominio externo      | INVALID_DOMAIN   | 400  |
-| Correo ya registrado           | VALIDATION_ERROR | 400  |
-| Falta displayName              | MISSING_FIELDS   | 400  |
-| profile con valor invalido     | VALIDATION_ERROR | 400  |
-| Password menor a 8 caracteres  | VALIDATION_ERROR | 400  |
-
----
-
-### 4.3  POST /api/v1/auth/login
-
-Carpeta: Auth
-Proposito: iniciar sesion con email y contrasena institucionales. El backend
-consulta la tabla `users` de Supabase y verifica el hash scrypt de la contrasena.
-
-Configuracion en Postman:
-
-| Campo   | Valor                                           |
-|:--------|:------------------------------------------------|
-| Metodo  | POST                                            |
-| URL     | {{base_url}}/api/{{api_version}}/auth/login     |
-| Header  | Content-Type: application/json                  |
-
-Body (tab Body > raw > JSON):
-
-    {
-      "email": "estudiante.prueba@pascualbravo.edu.co",
-      "password": "MiPassword123"
-    }
-
-Campos del body:
-
-| Campo    | Tipo   | Req | Descripcion                           |
-|:---------|:-------|:---:|:--------------------------------------|
-| email    | string | Si  | Debe terminar en @pascualbravo.edu.co |
-| password | string | Si  | Contrasena del usuario                |
-
-Respuesta exitosa - 200 OK:
-
-    {
-      "ok": true,
-      "version": "v1",
-      "data": {
-        "uid": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
-        "email": "estudiante.prueba@pascualbravo.edu.co",
-        "idToken": "MOCK_ID_TOKEN_REPLACE_IN_PHASE_4",
-        "expiresIn": 3600,
-        "profile": "estudiante"
-      }
-    }
-
-Nota: `idToken` sigue siendo un placeholder; aun no es un JWT y ningun endpoint
-lo valida. El request lo guarda en `auth_token`, pero los endpoints RAG son
-publicos. Si ves un `uid` con prefijo `mock_`, la instancia de produccion todavia
-no tiene desplegado el auth nuevo de `develop`.
-
-Errores esperados:
-
-| Escenario                  | Code           | HTTP |
-|:---------------------------|:---------------|:----:|
-| Email con dominio externo  | INVALID_DOMAIN | 400  |
-| Falta email o password     | MISSING_FIELDS | 400  |
-| Contrasena incorrecta      | UNAUTHORIZED   | 400  |
-
----
-
-### 4.4  POST /api/v1/vector-search
+### 4.2  POST /api/v1/vector-search
 
 Carpeta: RAG
 Proposito: buscar fragmentos del fondo documental institucional del Pascual Bravo
@@ -368,7 +248,7 @@ Errores esperados:
 
 ---
 
-### 4.5  POST /api/v1/generate
+### 4.3  POST /api/v1/generate
 
 Carpeta: RAG
 Proposito: orquestador principal. Ejecuta el flujo RAG hibrido completo:
@@ -474,23 +354,6 @@ Errores esperados:
 
 Crea requests adicionales en cada carpeta para validar el manejo de errores.
 
-### Auth > Dominio externo
-
-    {
-      "email": "usuario@gmail.com",
-      "password": "MiPassword123",
-      "displayName": "Usuario Externo",
-      "profile": "estudiante"
-    }
-
-Esperado: 400 INVALID_DOMAIN
-
-### Auth > Body vacio
-
-    {}
-
-Esperado: 400 MISSING_FIELDS listando todos los campos faltantes.
-
 ### Generate > Metodo incorrecto
 
 Cambia el metodo de POST a GET en el request de /generate.
@@ -524,14 +387,13 @@ El repo ya incluye una coleccion lista para importar:
 3. La coleccion ya trae `base_url = https://thoth-backend.vercel.app`
    como variable propia, asi que funciona sin configuracion adicional.
    Si importaste el environment, seleccionalo en la esquina superior derecha.
-4. Ejecuta los requests en orden: Health > Register (una vez) > Login > RAG.
+4. Ejecuta los requests en orden: Health > RAG.
 
 Contenido de la coleccion importada:
 
 | Carpeta | Requests |
 |:--------|:---------|
 | Health  | GET /health |
-| Auth    | POST /auth/register, POST /auth/login |
 | RAG     | POST /vector-search, POST /generate (estudiante), POST /generate (docente), POST /generate (documentType invalido) |
 
 Cada request incluye:
@@ -540,11 +402,6 @@ Cada request incluye:
 - ejemplos de respuesta guardados (casos 200 y errores 400) que reflejan el
   contrato de `develop`; produccion puede seguir mostrando respuestas mock
   hasta el proximo deploy del backend.
-
-El request POST /auth/login guarda el `idToken` placeholder en la variable de
-coleccion `auth_token` automaticamente; los requests de RAG incluyen el header
-`Authorization: Bearer {{auth_token}}` deshabilitado por defecto, porque los
-endpoints son publicos y aun no validan tokens.
 
 ### Opcion B: Crear manualmente
 
@@ -563,10 +420,8 @@ Sigue los pasos de la seccion 4 uno por uno en Postman.
 | #  | Metodo | Ruta                     | Descripcion                          |
 |:--:|:------:|:-------------------------|:-------------------------------------|
 | 1  | GET    | /api/v1/health           | Health check del sistema             |
-| 2  | POST   | /api/v1/auth/register    | Registro de usuario institucional    |
-| 3  | POST   | /api/v1/auth/login       | Login con email y contrasena         |
-| 4  | POST   | /api/v1/vector-search    | Busqueda semantica en RAG            |
-| 5  | POST   | /api/v1/generate         | Generacion RAG hibrido + Groq        |
+| 2  | POST   | /api/v1/vector-search    | Busqueda semantica en RAG            |
+| 3  | POST   | /api/v1/generate         | Generacion RAG hibrido + Groq        |
 
 Base URL local:   http://localhost:3000
 Prefijo version:  /api/v1/

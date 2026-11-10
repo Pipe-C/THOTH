@@ -79,4 +79,29 @@ describe('ragService', () => {
     expect(result.webContext).toBe('');
     expect(result.sourcesUsed).toEqual(['none']);
   });
+
+  it('degrada a web si la búsqueda institucional falla', async () => {
+    process.env.TAVILY_API_KEY = 'tvly-test';
+    vi.mocked(findSimilarChunks).mockRejectedValue(
+      new Error('[Supabase] Error en búsqueda vectorial'),
+    );
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          answer: 'Respuesta web de respaldo',
+          results: [{ url: 'https://x.co', content: 'detalle' }],
+        }),
+      }),
+    );
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const result = await resolveHybridContext('consulta');
+
+    expect(result.institutionalContext).toBe('');
+    expect(result.sourcesUsed).toEqual(['web']);
+    expect(result.webContext).toContain('Respuesta web de respaldo');
+    warnSpy.mockRestore();
+  });
 });

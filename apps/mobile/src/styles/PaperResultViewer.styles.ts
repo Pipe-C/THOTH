@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { colors, radii, shadows, typography } from '../theme/tokens';
+import { colors, radii, shadows, sizes, typography } from '../theme/tokens';
 
 export const styles = StyleSheet.create({
   outerContainer: {
@@ -51,8 +51,10 @@ export const styles = StyleSheet.create({
   },
   actionsBar: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: 10,
     borderTopWidth: 1,
     borderTopColor: colors.border,
     paddingTop: 14,
@@ -60,14 +62,17 @@ export const styles = StyleSheet.create({
   },
   exportGroup: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     alignItems: 'center',
     gap: 8,
   },
   actionButton: {
+    minHeight: sizes.touchTarget,
+    justifyContent: 'center',
     backgroundColor: colors.validation,
-    paddingVertical: 8,
+    paddingVertical: 9,
     paddingHorizontal: 12,
-    borderRadius: 8,
+    borderRadius: 10,
   },
   actionButtonText: {
     fontSize: 12,
@@ -75,10 +80,12 @@ export const styles = StyleSheet.create({
     color: colors.primary,
   },
   actionButtonSecondary: {
+    minHeight: sizes.touchTarget,
+    justifyContent: 'center',
     backgroundColor: colors.toggleOff,
-    paddingVertical: 8,
+    paddingVertical: 9,
     paddingHorizontal: 12,
-    borderRadius: 8,
+    borderRadius: 10,
   },
   actionButtonSecondaryText: {
     fontSize: 12,
@@ -91,6 +98,8 @@ export const styles = StyleSheet.create({
     gap: 12,
   },
   iconButton: {
+    minHeight: sizes.touchTarget,
+    justifyContent: 'center',
     paddingVertical: 6,
     paddingHorizontal: 8,
   },

@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { colors, radii, typography } from '../theme/tokens';
+import { colors, radii, shadows, sizes, typography } from '../theme/tokens';
 
 export const styles = StyleSheet.create({
   safeArea: {
@@ -11,8 +11,8 @@ export const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 14,
+    paddingTop: 20,
+    paddingBottom: 16,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
     backgroundColor: colors.background,
@@ -21,21 +21,32 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 14,
+    marginBottom: 16,
+    gap: 12,
+  },
+  identityBlock: {
+    flex: 1,
   },
   appTitle: {
-    fontSize: 24,
+    fontSize: 28,
+    lineHeight: 34,
     fontFamily: typography.fontFamily.bold,
     color: colors.primary,
+    letterSpacing: -0.4,
   },
   userEmail: {
     marginTop: 2,
   },
   profileBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    minHeight: sizes.touchTarget,
     backgroundColor: colors.validation,
     paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
+    paddingVertical: 8,
+    borderRadius: radii.input,
     borderWidth: 1,
     borderColor: colors.border,
   },
@@ -44,21 +55,27 @@ export const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: typography.fontFamily.semiBold,
   },
-  headerActions: {},
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   newChatButton: {
-    width: '100%',
+    flex: 1,
   },
   filterBar: {
     backgroundColor: colors.background,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
-    paddingVertical: 10,
+    paddingVertical: 12,
   },
   filterScroll: {
     paddingHorizontal: 20,
     gap: 8,
   },
   filterChip: {
+    minHeight: sizes.touchTarget,
+    justifyContent: 'center',
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 20,
@@ -87,55 +104,69 @@ export const styles = StyleSheet.create({
   docItemCard: {
     backgroundColor: colors.surface,
     borderRadius: radii.card,
-    padding: 16,
+    padding: 18,
     borderWidth: 1,
     borderColor: colors.border,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    elevation: 1,
+    ...shadows.card,
   },
   docHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    gap: 8,
+    marginBottom: 10,
   },
   ragBadges: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-end',
     gap: 4,
   },
   docTitle: {
-    fontSize: 15,
+    fontSize: 16,
     fontFamily: typography.fontFamily.semiBold,
     color: colors.textPrimary,
-    lineHeight: 22,
+    lineHeight: 23,
     marginBottom: 4,
   },
   docPreview: {
     fontSize: 13,
     fontFamily: typography.fontFamily.regular,
     color: colors.textSecondary,
-    lineHeight: 18,
-    marginBottom: 10,
+    lineHeight: 19,
+    marginBottom: 12,
   },
   docFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: 8,
+    paddingTop: 10,
     borderTopWidth: 1,
     borderTopColor: colors.border,
+  },
+  openHintRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
   },
   openHint: {
     fontSize: 12,
     fontFamily: typography.fontFamily.semiBold,
-    color: colors.accent,
+    color: colors.accentStrong,
   },
   emptyCard: {
     alignItems: 'center',
     paddingVertical: 32,
+    paddingHorizontal: 24,
+  },
+  emptyIcon: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 22,
+    backgroundColor: colors.validation,
+    marginBottom: 12,
   },
   emptyTitle: {
     textAlign: 'center',
@@ -143,5 +174,9 @@ export const styles = StyleSheet.create({
   },
   emptySubtitle: {
     textAlign: 'center',
+  },
+  emptyBody: {
+    textAlign: 'center',
+    marginTop: 6,
   },
 });

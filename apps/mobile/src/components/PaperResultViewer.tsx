@@ -25,8 +25,8 @@ export interface PaperResultViewerProps {
 export const PaperResultViewer: React.FC<PaperResultViewerProps> = ({
   title,
   content,
-  sourcesUsed = ['institutional'],
-  antiClicheApplied = true,
+  sourcesUsed = [],
+  antiClicheApplied = false,
   createdAt,
   onExportPdf,
   onExportDocx,
@@ -103,6 +103,8 @@ export const PaperResultViewer: React.FC<PaperResultViewerProps> = ({
           <View style={styles.exportGroup} className="flex-row items-center gap-2">
             {onExportPdf && (
               <TouchableOpacity
+                accessibilityRole="button"
+                accessibilityLabel="Exportar respuesta académica a PDF"
                 activeOpacity={0.7}
                 onPress={onExportPdf}
                 style={styles.actionButton}
@@ -116,6 +118,8 @@ export const PaperResultViewer: React.FC<PaperResultViewerProps> = ({
 
             {onExportDocx && (
               <TouchableOpacity
+                accessibilityRole="button"
+                accessibilityLabel="Exportar respuesta académica a Word"
                 activeOpacity={0.7}
                 onPress={onExportDocx}
                 style={styles.actionButtonSecondary}
@@ -131,6 +135,8 @@ export const PaperResultViewer: React.FC<PaperResultViewerProps> = ({
           <View style={styles.quickActions} className="flex-row items-center gap-2">
             {onCopy && (
               <TouchableOpacity
+                accessibilityRole="button"
+                accessibilityLabel="Copiar respuesta académica"
                 activeOpacity={0.7}
                 onPress={onCopy}
                 style={styles.iconButton}
@@ -142,6 +148,8 @@ export const PaperResultViewer: React.FC<PaperResultViewerProps> = ({
             )}
 
             <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel="Compartir respuesta académica"
               activeOpacity={0.7}
               onPress={handleShare}
               style={styles.iconButton}

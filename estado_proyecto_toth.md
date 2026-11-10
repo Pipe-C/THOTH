@@ -1,6 +1,6 @@
 # Estado del proyecto TOTH
 
-> Actualizado: 2026-10-22. Este documento resume el estado verificable del repo;
+> Actualizado: 2026-11-09. Este documento resume el estado verificable del repo;
 > las directivas completas viven en `AGENTS.md` y `COMPORTAMIENTO_DEL_ASISTENTE.md`.
 
 ## 1. Resumen
@@ -8,7 +8,7 @@
 | Fase | Estado |
 | :--- | :--- |
 | 0–4 (scaffold, UI, backend, integración + Kotlin) | ✅ Completas |
-| 5 (validación final) | 🟡 RAG 3/3 en producción y E2E en emulador OK; falta la prueba de regeneración anti-cliché |
+| 5 (validación final) | ✅ Anti-cliché, fallback web y RAG 3/3 en producción; E2E y exportaciones OK |
 
 El monorepo (`apps/mobile`, `apps/backend`) usa npm workspaces. Rama de trabajo:
 `develop`. Backend desplegado en `https://thoth-backend.vercel.app`.
@@ -22,12 +22,12 @@ El monorepo (`apps/mobile`, `apps/backend`) usa npm workspaces. Rama de trabajo:
 - Toggle anti-cliché real: `antiClicheEnabled` viaja de `generateController` a
   `generationService`; con `false` se omite el `NEGATIVE_PROMPT` y no hay regeneración.
   Nuevo campo en `lib/types.ts`.
-- Tests nuevos para el toggle: **100 tests pasan**; `tsc --noEmit` OK.
+- Tests nuevos para el toggle: **75 tests pasan**; `tsc --noEmit` OK.
 - Script `npm run validate:rag` (`scripts/validate-rag.mjs`): valida los tres casos
   (institucional, web, mixto) y detecta clichés.
-- Auth v1 en Supabase (merge del PR #27): tabla `public.users` vía migración
-  `0003_create_users_table.sql`, hash scrypt e `idToken` aún placeholder. Producción
-  sigue sirviendo el auth mock hasta el deploy de `main`.
+- Auth Supabase retirada: `/api/v1/auth/*`, controlador/servicio/repositorio de
+  usuarios y tests eliminados. La autenticación vive solo en Firebase Auth; Supabase
+  queda como pgvector. La migración `0004_drop_users_table.sql` retira `public.users`.
 
 ### Mobile
 
@@ -39,8 +39,11 @@ El monorepo (`apps/mobile`, `apps/backend`) usa npm workspaces. Rama de trabajo:
   de error explícito.
 - `src/services/apiClient.ts`: usa `API_BASE_URL`, timeout de 45 s con `AbortController`,
   sobre de respuesta `ok` y errores tipados; `vectorSearch` tipado como `{ results, meta }`.
-- `src/services/authClient.ts`: guard `FIREBASE_NOT_CONFIGURED` y traducción de errores
-  `API_KEY_INVALID` / `CONFIGURATION_NOT_FOUND`.
+- `src/services/authClient.ts`: guard `FIREBASE_NOT_CONFIGURED`, traducción de errores
+  `API_KEY_INVALID` / `CONFIGURATION_NOT_FOUND`, persistencia de refresh token y
+  renovación automática del `idToken`.
+- Registro/login 100 % Firebase: `displayName` se actualiza en Auth, el perfil elegido
+  se conserva al reiniciar, hay cierre de sesión y la app restaura la sesión al abrir.
 - `ChatScreen`: envía `antiClicheEnabled`, filtra fuentes `'none'`, guarda el turno
   completo en `users/{uid}/conversations/{id}/messages` y mantiene la caché Room.
   Carga el historial al abrir una conversación y muestra estados de carga/error.
@@ -69,9 +72,38 @@ El monorepo (`apps/mobile`, `apps/backend`) usa npm workspaces. Rama de trabajo:
 - Portapapeles real con `@react-native-clipboard/clipboard` (el handler anterior solo
   mostraba el aviso, sin copiar).
 
+## 2.1 Cambios de la sesión 2026-11-06
+
+### Backend
+
+- `resolveHybridContext` degrada a contexto web/none si la búsqueda institucional
+  falla (`fix(rag)`), en vez de devolver 502. Cubierto por tests unitarios y por una
+  prueba de integración real con Groq/Tavily (`tests/integration/ragFallback...`).
+- Prueba de integración real del filtro anti-cliché: Groq genera una salida con
+  muletillas, el filtro las detecta, se construye el prompt de reescritura y el
+  modelo devuelve un texto limpio (`tests/integration/antiCliche...`). Ambas pruebas
+  viven tras `RUN_LIVE_TESTS=1` para no consumir cuota en CI.
+- Suite: **76 tests pasan, 2 live tests se omiten por defecto**; `tsc --noEmit` OK.
+
+### Mobile
+
+- Rediseño “Serenidad Académica”: tokens ampliados, tipografía Lexend
+  (Light/Regular/Medium/SemiBold/Bold), componentes base con touch targets de 44 px,
+  accesibilidad, contraste y pantallas pulidas.
+- Mensajes de error del chat ya no muestran badges falsos de RAG/anti-cliché.
+- Build release Android y E2E en emulador Pixel 7 (Android 17): Login → Directory →
+  Chat → RoleSelect, con verificación por `uiautomator dump`.
+
 ## 3. Validación ejecutada
 
-- `npm test` (backend): **100/100**.
+- 2026-11-06 — `npm test` (backend): **76/76** pasan; 2 pruebas live omitidas por
+  defecto. `RUN_LIVE_TESTS=1` ejecuta la regeneración anti-cliché real y el fallback
+  web real: **2/2 OK**. `npm run lint` (tsc --noEmit): OK.
+- 2026-11-06 — `npx tsc --noEmit` (mobile): OK. `assembleRelease`: BUILD SUCCESSFUL.
+  APK instalada en Pixel 7 (Android 17) y flujo E2E validado por `uiautomator dump`.
+- 2026-11-09 — Producción: `GET /api/v1/health` → **healthy** (`supabase: true`,
+  `groq: true`); `npm run validate:rag` → **3/3 OK** (institucional, web y mixto).
+- `npm test` (backend, histórico): **100/100**.
 - `npm run lint` (backend, `tsc --noEmit`): OK.
 - `npx tsc --noEmit` (mobile): OK.
 - `gradlew assembleDebug`: **BUILD SUCCESSFUL**.
@@ -105,18 +137,19 @@ El monorepo (`apps/mobile`, `apps/backend`) usa npm workspaces. Rama de trabajo:
   **3/3 casos OK** (institucional, web, mixto). `/api/v1/health` → `healthy`.
 - SonarCloud (2026-10-22): tras los commits `7b76af7` y `4a48ec2`, el Quality Gate de
   `develop` quedó **OK** (`new_security_rating` 1, `new_maintainability_rating` 1,
-  cobertura nueva 84.0 %, 100 tests backend).
+  cobertura nueva 84.0 %, 100 tests backend antes de retirar auth Supabase; hoy 76).
+- PR #26 (`develop` → `main`) mergeado el 2026-10-23 (`7ab2b89`).
 
 ## 4. Pendientes
 
-1. Abrir y mergear el PR `develop` → `main`. Antes del merge, aplicar la migración
-   `0003_create_users_table.sql` en Supabase y verificar `/auth/register` +
-   `/auth/login` tras el deploy.
-2. Verificar el caso de regeneración anti-cliché con una respuesta que contenga
-   muletillas (hoy se validó el badge y el envío del toggle).
-3. Rotar la Supabase Secret key expuesta previamente y actualizarla en Vercel y `.env`.
-4. Evaluar refresh de `idToken` para sesiones largas (hoy se guarda el token de la
-   sesión inicial).
+1. Aplicar `0004_drop_users_table.sql` y verificar que no queden referencias a
+   `public.users`.
+2. Rotar la Supabase Secret key expuesta previamente y actualizarla en Vercel y `.env`.
+   La publishable key compartida no sustituye a la service role key.
+3. Añadir notificaciones push con FCM (requiere `google-services.json` y cuenta de
+   servicio de Firebase) y evaluar verificación de correo institucional.
+4. Cargar documentos institucionales reales en `apps/backend/documents/` y ejecutar
+   `npm run ingest`.
 
 ## 5. Commits realizados (por capas)
 
@@ -134,6 +167,17 @@ El monorepo (`apps/mobile`, `apps/backend`) usa npm workspaces. Rama de trabajo:
 12. `fix(auth): conserva el perfil elegido al iniciar sesión`
 13. `fix(backend): simplifica la validación de credenciales`
 14. `fix(mobile): resuelve hallazgos de seguridad y complejidad de Sonar`
+15. `refactor(backend): retira la autenticación paralela de Supabase`
+16. `feat(mobile): completa registro, login y sesión con Firebase`
+17. `docs: documenta Firebase Auth como única autenticación`
+18. `fix(rag): degrada a web cuando falla la búsqueda institucional`
+19. `feat(mobile): incorpora la tipografía Lexend`
+20. `feat(theme): amplía tokens de identidad y accesibilidad`
+21. `feat(ui): mejora componentes base con accesibilidad y contraste`
+22. `feat(mobile): rediseña pantallas del flujo académico`
+23. `test(backend): valida anti-cliché y fallback web con servicios reales`
+24. `chore: ignora credenciales de Firebase y keystores`
+25. `docs: registra producción healthy y RAG 3/3`
 
 > No se hace `git push` sin confirmación explícita.
 
@@ -146,3 +190,16 @@ El monorepo (`apps/mobile`, `apps/backend`) usa npm workspaces. Rama de trabajo:
   No afecta a un emulador API 34 ni a dispositivos convencionales.
 - PowerShell 5.1 muestra mojibake al leer archivos UTF-8; el contenido del repo es
   correcto (verificado en DOCX y README).
+
+## 7. Producción (2026-11-09)
+
+- Supabase volvió a resolver DNS (`xrbezcimbdpnmfzevprb.supabase.co` → Cloudflare).
+- Backend redesplegado a producción: `dpl_5NpurVNEeQE3zo4pro2o7zptz638`.
+- `GET https://thoth-backend.vercel.app/api/v1/health` → **healthy**
+  (`supabase: true`, `groq: true`).
+- `npm run validate:rag` contra producción → **3/3 OK**:
+  institucional, web y mixto, sin clichés detectados.
+- La app móvil ya no muestra el error de base vectorial: el flujo RAG híbrido
+  institucional + web vuelve a estar operativo.
+- El backend usa `SUPABASE_SERVICE_ROLE_KEY` (secreto). La publishable key es
+  client-side y no debe configurarse como service role.

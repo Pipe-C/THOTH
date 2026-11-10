@@ -40,10 +40,14 @@ capas de diseño sobre el LLM:
 | 2 | Pantallas de flujo principal (mock data) | ✅ Completa |
 | 3 | Backend: Vercel + Groq + Supabase RAG | ✅ Completa |
 | 4 | Integración real frontend-backend + puente Kotlin | ✅ Completa |
-| 5 | Integración y validación final | 🟡 RAG 3/3 en producción y E2E en emulador OK; falta la prueba de regeneración anti-cliché |
+| 5 | Integración y validación final | ✅ Anti-cliché, fallback web y RAG 3/3 en producción; E2E y exportaciones OK |
 
 > El detalle completo de cada fase, criterios de aceptación y decisiones de arquitectura
 > vive en el documento interno de directivas del agente (no versionado en este repo).
+>
+> **Nota 2026-11-09:** producción restaurada. `GET /api/v1/health` → `healthy` y
+> `npm run validate:rag` → **3/3** (institucional, web y mixto). Ver
+> `estado_proyecto_toth.md`, sección 7.
 
 ---
 
@@ -98,11 +102,11 @@ THOTH/
 │   │       ├── services/       # Clientes reales (apiClient, authClient, firestoreClient, nativeBridge)
 │   │       └── types/          # Interfaces compartidas (User, ChatMessage...)
 │   └── backend/                # Orquestador serverless en Vercel
-│       ├── api/v1/             # Rutas (entradas serverless: health, auth, vector-search, generate)
+│       ├── api/v1/             # Rutas (entradas serverless: health, vector-search, generate)
 │       ├── lib/
 │       │   ├── controllers/    # Traducen HTTP ↔ servicios
-│       │   ├── services/       # Lógica de negocio (RAG, generación, auth, health)
-│       │   ├── repositories/   # Acceso a datos (Supabase, Groq, usuarios)
+│       │   ├── services/       # Lógica de negocio (RAG, generación, health)
+│       │   ├── repositories/   # Acceso a datos (Supabase pgvector, Groq)
 │       │   ├── routes/         # Fábrica de rutas y registro de endpoints
 │       │   ├── groq.ts         # Cliente Groq + prompts del asistente
 │       │   ├── supabase.ts     # Cliente pgvector + búsqueda vectorial
@@ -179,6 +183,8 @@ El fondo documental institucional vive en Supabase (pgvector). Para prepararlo:
    - `apps/backend/supabase/migrations/0002_fix_vector_index.sql` — reemplaza el
      índice `ivfflat` por **HNSW**, necesario para una recuperación fiable con
      pocos documentos.
+   - `apps/backend/supabase/migrations/0004_drop_users_table.sql` — retira la
+     antigua tabla `public.users` de auth Supabase (Firebase es la única auth).
 2. **Desplegar la Edge Function de embeddings.**
    ```bash
    supabase functions deploy embed --project-ref <TU_PROJECT_REF>
@@ -262,8 +268,12 @@ npx firebase-tools deploy --only firestore:rules
 ```bash
 # Backend: pruebas y typecheck
 cd apps/backend
-npm test                 # 100 tests
+npm test                 # 76 tests (2 live omitidos por defecto)
 npm run lint             # tsc --noEmit
+
+# Pruebas live (consumen Groq/Tavily reales)
+$env:RUN_LIVE_TESTS='1'; npx vitest run tests/integration --reporter=verbose
+Remove-Item Env:RUN_LIVE_TESTS
 
 # Typecheck de la app móvil
 cd apps/mobile
@@ -322,18 +332,16 @@ repositorio**, con `lib/response.ts` como formato de respuesta único.
 | Método | Ruta | Controlador | Descripción |
 | :--- | :--- | :--- | :--- |
 | `GET` | `/api/v1/health` | `healthController` | Estado de Supabase y Groq |
-| `POST` | `/api/v1/auth/register` | `authController` | Registro en Supabase (`users`), contraseña con scrypt |
-| `POST` | `/api/v1/auth/login` | `authController` | Login contra Supabase; `idToken` aún placeholder |
 | `POST` | `/api/v1/vector-search` | `vectorSearchController` | Búsqueda semántica institucional (pública) |
 | `POST` | `/api/v1/generate` | `generateController` | Orquestador RAG híbrido + generación (público) |
 
 El mapa de rutas es `lib/routes/apiRoutes.ts`; Vercel enruta por archivo según
 `apps/backend/vercel.json`.
 
-> La app móvil autentica con **Firebase Auth**; las rutas `/api/v1/auth/*` son una
-> implementación paralela sobre la tabla `public.users` de Supabase
-> (migración `0003_create_users_table.sql`) y todavía no emiten un JWT real. Los
-> endpoints RAG no validan `Authorization`.
+> La app móvil autentica con **Firebase Auth** y guarda el historial en Cloud
+> Firestore. Supabase se usa únicamente como almacén vectorial del RAG; no tiene
+> endpoints de autenticación ni tabla `public.users`. Los endpoints RAG son públicos
+> y no validan `Authorization`.
 >
 > Colección de Postman: `docs/TOTH_API_v1.postman_collection.json`; guía:
 > `docs/POSTMAN_GUIDE.md`.

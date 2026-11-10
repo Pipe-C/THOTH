@@ -14,7 +14,6 @@ export interface InputProps extends TextInputProps {
   helperText?: string;
   errorText?: string;
   containerStyle?: ViewStyle;
-  containerClassName?: string;
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
 }
@@ -24,7 +23,6 @@ export const Input: React.FC<InputProps> = ({
   helperText,
   errorText,
   containerStyle,
-  containerClassName = '',
   leftIcon,
   rightIcon,
   style,
@@ -47,9 +45,9 @@ export const Input: React.FC<InputProps> = ({
   const isError = Boolean(errorText);
 
   return (
-    <View style={[styles.container, containerStyle]} className={`w-full ${containerClassName}`}>
+    <View style={[styles.container, containerStyle]}>
       {label ? (
-        <Text style={styles.label} className="font-lexend-medium text-xs text-textSecondary mb-1.5">
+        <Text style={styles.label}>
           {label}
         </Text>
       ) : null}
@@ -59,31 +57,28 @@ export const Input: React.FC<InputProps> = ({
           isFocused && styles.inputFocused,
           isError && styles.inputError,
         ]}
-        className={`flex-row items-center bg-white rounded-xl border border-primary/10 px-4 py-3 ${
-          isFocused ? 'border-primary' : ''
-        } ${isError ? 'border-red-500' : ''}`}
       >
-        {leftIcon ? <View style={styles.iconContainer}>{leftIcon}</View> : null}
+        {leftIcon ? <View style={styles.iconLeft}>{leftIcon}</View> : null}
         <TextInput
+          accessibilityLabel={props.accessibilityLabel ?? label}
           placeholderTextColor={colors.textSecondary}
+          selectionColor={colors.primary}
           style={[styles.input, style]}
-          className="flex-1 font-lexend-regular text-sm text-textPrimary py-0"
           onFocus={handleFocus}
           onBlur={handleBlur}
           {...props}
         />
-        {rightIcon ? <View style={styles.iconContainer}>{rightIcon}</View> : null}
+        {rightIcon ? <View style={styles.iconRight}>{rightIcon}</View> : null}
       </View>
       {errorText ? (
-        <Text style={styles.errorText} className="font-lexend-regular text-xs text-red-600 mt-1">
+        <Text style={styles.errorText}>
           {errorText}
         </Text>
       ) : helperText ? (
-        <Text style={styles.helperText} className="font-lexend-regular text-xs text-textSecondary mt-1">
+        <Text style={styles.helperText}>
           {helperText}
         </Text>
       ) : null}
     </View>
   );
 };
-

@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { colors, radii, typography } from '../theme/tokens';
+import { colors, radii, sizes, typography } from '../theme/tokens';
 
 export const styles = StyleSheet.create({
   base: {
@@ -7,6 +7,7 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radii.button,
+    minHeight: sizes.touchTarget,
   },
   textBase: {
     fontFamily: typography.fontFamily.semiBold,
@@ -20,12 +21,12 @@ export const styles = StyleSheet.create({
     color: colors.surface,
   },
   accentContainer: {
-    backgroundColor: colors.accent,
+    backgroundColor: colors.accentStrong,
   },
   outlineContainer: {
     backgroundColor: 'transparent',
-    borderWidth: 1.5,
-    borderColor: colors.primary,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
   },
   outlineText: {
     color: colors.primary,
@@ -41,16 +42,17 @@ export const styles = StyleSheet.create({
   },
   // Sizes
   sizeSm: {
-    paddingVertical: 8,
+    paddingVertical: 10,
     paddingHorizontal: 14,
   },
   sizeMd: {
-    paddingVertical: 14,
+    paddingVertical: 12,
     paddingHorizontal: 20,
   },
   sizeLg: {
-    paddingVertical: 18,
-    paddingHorizontal: 26,
+    minHeight: 52,
+    paddingVertical: 15,
+    paddingHorizontal: 24,
   },
   textSizeSm: {
     fontSize: 13,
@@ -59,7 +61,7 @@ export const styles = StyleSheet.create({
     fontSize: 15,
   },
   textSizeLg: {
-    fontSize: 17,
+    fontSize: 16,
   },
   // Disabled
   disabledContainer: {

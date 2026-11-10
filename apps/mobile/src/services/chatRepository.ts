@@ -26,10 +26,14 @@ import type {
   ConversationSummary,
 } from '../types';
 
+function requiresFirestore(session: AuthSession | null): session is AuthSession {
+  return session !== null && session.isGuest !== true;
+}
+
 export async function loadConversations(
   session: AuthSession | null,
 ): Promise<ConversationSummary[]> {
-  return session
+  return requiresFirestore(session)
     ? listConversations(session.uid, session.idToken)
     : listGuestConversations();
 }
@@ -38,7 +42,7 @@ export async function loadMessages(
   session: AuthSession | null,
   conversationId: string,
 ): Promise<ChatMessage[]> {
-  return session
+  return requiresFirestore(session)
     ? listMessages(session.uid, session.idToken, conversationId)
     : getGuestMessages(conversationId);
 }
@@ -47,7 +51,7 @@ export async function createConversation(
   session: AuthSession | null,
   conversation: ConversationSummary,
 ): Promise<void> {
-  if (session) {
+  if (requiresFirestore(session)) {
     await saveConversation(session.uid, session.idToken, conversation);
     return;
   }
@@ -59,7 +63,7 @@ export async function updateConversation(
   conversationId: string,
   patch: ConversationPatch,
 ): Promise<void> {
-  if (session) {
+  if (requiresFirestore(session)) {
     await patchConversation(session.uid, session.idToken, conversationId, patch);
     return;
   }
@@ -71,7 +75,7 @@ export async function appendMessage(
   conversationId: string,
   message: ChatMessage,
 ): Promise<void> {
-  if (session) {
+  if (requiresFirestore(session)) {
     await saveMessage(session.uid, session.idToken, conversationId, message);
     return;
   }

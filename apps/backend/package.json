@@ -11,7 +11,8 @@
     "test:coverage": "vitest run --coverage",
     "seed": "node scripts/seed.mjs",
     "ingest": "node scripts/ingest.mjs",
-    "validate:rag": "node scripts/validate-rag.mjs"
+    "validate:rag": "node scripts/validate-rag.mjs",
+    "create:users": "node scripts/create-firebase-users.mjs"
   },
   "dependencies": {
     "@google/genai": "^0.2.0",

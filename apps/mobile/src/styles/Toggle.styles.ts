@@ -1,16 +1,23 @@
 import { StyleSheet } from 'react-native';
-import { colors, typography } from '../theme/tokens';
+import { colors, sizes, typography } from '../theme/tokens';
 
 export const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    minHeight: sizes.touchTarget,
     paddingVertical: 8,
   },
   textContainer: {
     flex: 1,
     marginRight: 16,
+  },
+  icon: {
+    marginRight: 10,
+  },
+  copy: {
+    flex: 1,
   },
   label: {
     fontSize: 14,
@@ -25,16 +32,16 @@ export const styles = StyleSheet.create({
     lineHeight: 16,
   },
   track: {
-    width: 48,
-    height: 28,
-    borderRadius: 14,
+    width: 52,
+    height: 30,
+    borderRadius: 15,
     padding: 2,
     justifyContent: 'center',
   },
   thumb: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     backgroundColor: colors.toggleThumb,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },

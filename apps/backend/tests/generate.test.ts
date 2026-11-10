@@ -154,10 +154,15 @@ describe('Generate Endpoint (POST /api/v1/generate)', () => {
       expect(state.body.data.sources_used).toContain('institutional');
     });
 
-    it('debe responder 502 DB_ERROR si la base vectorial falla con prefijo [Supabase]', async () => {
+    it('degrada a respuesta sin contexto si la base vectorial falla', async () => {
       vi.mocked(searchDocuments).mockRejectedValueOnce(
         new Error('[Supabase] Conexión perdida con pgvector'),
       );
+      vi.mocked(generateContent).mockResolvedValueOnce({
+        text: 'Respuesta generada sin contexto institucional.',
+        sourcesUsed: ['none'],
+      });
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
       const { req, res, state } = createMockHttp('POST', {
         prompt: 'Prueba supabase error',
@@ -168,8 +173,9 @@ describe('Generate Endpoint (POST /api/v1/generate)', () => {
 
       await generateHandler(req, res);
 
-      expect(state.statusCode).toBe(502);
-      expect(state.body.error.code).toBe('DB_ERROR');
+      expect(state.statusCode).toBe(200);
+      expect(state.body.data.sources_used).toEqual(['none']);
+      warnSpy.mockRestore();
     });
 
     it('debe responder 500 INTERNAL_ERROR ante errores inesperados', async () => {

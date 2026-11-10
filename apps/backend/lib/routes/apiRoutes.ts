@@ -30,20 +30,6 @@ export const API_ROUTES: ApiRouteDefinition[] = [
     description: 'Estado de los servicios externos (Supabase, Groq).',
   },
   {
-    path: '/api/v1/auth/register',
-    method: 'POST',
-    entry: 'api/v1/auth/register.ts',
-    controller: 'controllers/authController.ts',
-    description: 'Registro de usuario institucional.',
-  },
-  {
-    path: '/api/v1/auth/login',
-    method: 'POST',
-    entry: 'api/v1/auth/login.ts',
-    controller: 'controllers/authController.ts',
-    description: 'Inicio de sesión institucional.',
-  },
-  {
     path: '/api/v1/vector-search',
     method: 'POST',
     entry: 'api/v1/vector-search.ts',

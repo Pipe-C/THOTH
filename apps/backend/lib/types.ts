@@ -64,23 +64,6 @@ export interface VectorSearchResult {
   similarity: number;
 }
 
-// ─── Payload user register ──────────────────────────
-
-export interface RegisterRequest {
-  email: string;
-  /** Has to be @pascualbravo.edu.co */
-  password: string;
-  displayName: string;
-  profile: UserProfile;
-}
-
-// ─── Payload login ─────────────────────────────────────────
-
-export interface LoginRequest {
-  email: string;
-  password: string;
-}
-
 // ─── Generation response ──────────────────────────────────
 
 export interface GenerateResponse {
